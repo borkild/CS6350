@@ -12,7 +12,6 @@ def LoadData(dataPath):
         data = np.empty((numLine,numAtt),dtype=np.dtype('U100')) # create numpy array to write data to
         for lineIdx in range(len(dataArray)): # iterate through list and break data up
             terms = dataArray[lineIdx].strip(' ').split(',')
-            print(type(terms[0]))
             term_count = 0
             for val in terms:
                 data[lineIdx,term_count] = val
@@ -62,11 +61,41 @@ def InfoGain(data):
 
 # function to calculate Majority Error
 def ME(data):
-    pass
+    dataShape = data.shape
+    # start by calculating overall entropy
+    labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
+    print(labels.size)
+    num_label = np.empty((labels.size))
+    for labelIdx in range(len(labels)): # find amount of each label
+        num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
+    print(np.sum(num_label))
+    print(num_label.max)
+    ME_S = (np.sum(num_label) - np.max(num_label))/np.sum(num_label) # calculate overall entropy
+    MEGain = np.empty(dataShape[1] - 1) # array to write ME for each attribute to
+
+    for attIdx in range(dataShape[1] - 1): # iterate through columns of data array -- going through Attributes
+        att = np.unique(data[:,attIdx]) # get unique attribute values
+        numAttVal = np.empty(len(att)) # array to store number of each attribute value
+        ME_S_v = np.empty(len(att)) # array to store ME of each attribute value, ME(S_v)
+
+        for attValIdx in range(len(att)): # iterate through specific values of a single attribute
+            attVal_Loc = np.argwhere(data[:,attIdx] == att[attValIdx])
+            numAttVal[attValIdx] = attVal_Loc.size
+            attLabel = np.empty((labels.size)) 
+
+            for labelIdx in range(len(labels)): # iterate through labels for specific attribute value
+                attLabel[labelIdx] = np.sum(data[attVal_Loc,dataShape[1]-1] == labels[labelIdx])
+            # calculate entropy for attribute subset
+            ME_S_v[attValIdx] = (numAttVal[attValIdx] - np.max(attLabel))/numAttVal[attValIdx]
+
+        # now calculat information gain for each attribute
+        MEGain[attIdx] = ME_S - np.sum((numAttVal/len(data[:,attIdx]))*ME_S_v) 
+    return MEGain
 
 
 # function to calculate Gini Index
-
+def GI(data):
+    pass
 
 # class to create our trees
 
@@ -78,4 +107,5 @@ data = np.copy(CarTrainData)
 
 print(CarTrainData[0,0])
 H = InfoGain(data)
-print(H)
+MEval = ME(data)
+print(MEval)
