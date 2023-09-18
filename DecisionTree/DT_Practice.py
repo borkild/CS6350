@@ -126,19 +126,44 @@ def GI(data):
 # class to create our trees
 class tree:
     def __init__(self, name = 'root', children = None, branches = None):
-        self.name = name 
-        self.branch = [] # branches are the values our attributes can take on
-        self.child = [] # children are the subtrees below our branches
+        self.name = str(name) # always convert name to a string, makes keeping track easier
+        # branches are the values our attributes can take on
+        if branches != None:
+            if type(branches) != list:
+                self.branch = [branches]
+            else:
+                self.branch = branches
+        else:
+            self.branch = []
+        # children are the subtrees below our branches
+        if children != None:
+            if type(children) != list:
+                self.child = [children]
+            else:
+                self.child = children
+        else:
+            self.child = []
         # the indices of the branches match the indices of the subtree from that branch
 
     # function to add child trees and branches
     def addChild(self, children=None, branches = None):
-        self.child = np.append(self.child, children)
-        self.branch = np.append(self.branch, branches)
+        self.child.append(children)
+        self.branch.append(branches)
 
     # function to calculate depth of tree
-    def calcDepth(self):
-        pass
+    def calcDepth(self, depth = 0):
+        curChild = self.child
+        if len(curChild) == 0: # if there are no subtrees, then we are at the end of the tree
+            depth += 1
+            return depth
+        else: # otherwise we need to go through the subtrees
+            newdepth = depth
+            for subtree in self.child:
+                cur_stDepth = subtree.calcDepth(depth+1)
+                if cur_stDepth > newdepth:
+                    newdepth = cur_stDepth
+            return newdepth
+
 
     # function to do a forward pass through tree with data
     def forward(self,data):
@@ -146,10 +171,14 @@ class tree:
 
 
 
-    
+t = tree('1', [tree('2', [tree('4',[tree('5')])],['att3']), tree('3',tree('6'))], ['att1', 'att2'])
 
+td = t.calcDepth()
 
+print(td)
 
+tnew = tree('2', [tree('1', [tree('-'), tree('+')], ['c','d']), 
+                  tree('0', [tree('+'), tree('3', [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
 
 
 # load in training data
