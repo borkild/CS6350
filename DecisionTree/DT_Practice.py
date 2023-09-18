@@ -173,9 +173,9 @@ class tree:
         else:
             nodeList = np.arange(0, data.size)
             nodeList = nodeList.astype(str)
-            print(nodeList)
-            branchVal = nodeList[nodeList == self.name]
-            branchIdx = np.argwhere(self.branch == branchVal)
+            branchVal = data[nodeList == self.name]
+            branchIdx = self.branch.index(branchVal[0])
+            return self.child[branchIdx].forward(data)
 
 
 
@@ -191,6 +191,7 @@ tnew = tree('2', [tree('1', [tree('-'), tree('+')], ['c','d']),
 
 example_data = np.array(['b', 'c', 'f', 'g'])
 output = tnew.forward(example_data)
+print(output)
 
 # load in training data
 CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
