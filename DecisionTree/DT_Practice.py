@@ -24,7 +24,6 @@ def InfoGain(data):
     dataShape = data.shape
     # start by calculating overall entropy
     labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
-    print(labels.size)
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
         num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
@@ -167,7 +166,7 @@ class tree:
         if len(self.branch) == 0 & len(self.child) == 0: # means we have hit a leaf node and need to return the value
             return self.name
         else:
-            nodeList = np.arange(0, data.size)
+            nodeList = np.arange(0, data.size) 
             nodeList = nodeList.astype(str)
             branchVal = data[nodeList == self.name]
             branchIdx = self.branch.index(branchVal[0])
@@ -181,13 +180,19 @@ def ID3(data, gainFunction=InfoGain,max_depth=0):
     # default gain function is information gain, but the user can specify other gain functions
     # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
 
-    labels = data[:,data.shape[1]] # get labels from data
+    labels = data[:,data.shape[1]-1] # get labels from data
     # check if all labels are the same
     labCheck = np.sum(labels == labels[0])
     if labCheck == labels.size:
         return tree(labels[0]) # returns leaf node, which is a tree structure with only a name
     else:
-        pass
+        gains = gainFunction(data) # calculate information gain using selected function
+        # get attribute with maximum information gain
+        att = np.argmax(gains)
+        # find all possible values the attribute can take on
+        possAttVal = np.unique(data[:,att]) 
+        # split up data based on attribute
+        
 
 
 
@@ -209,7 +214,7 @@ output = tnew.forward(example_data)
 print(output)
 
 # load in training data
-CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
+CarTrainPath = 'DecisionTree/data/car/train.csv' # assuming car data is in the same folder as script
 CarTrainData = LoadData(CarTrainPath)
 
 data = np.copy(CarTrainData)
