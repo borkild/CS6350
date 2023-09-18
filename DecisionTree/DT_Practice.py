@@ -18,10 +18,6 @@ def LoadData(dataPath):
                 term_count += 1
     return data
 
-# function to execute ID3 algorithm
-def ID3(data,Attributes,max_depth): 
-    #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
-    pass 
 
 # function to calculate Information Gain
 def InfoGain(data):
@@ -179,6 +175,25 @@ class tree:
 
 
 
+# function to execute ID3 algorithm
+def ID3(data, gainFunction=InfoGain,max_depth=0): 
+    #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
+    # default gain function is information gain, but the user can specify other gain functions
+    # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
+
+    labels = data[:,data.shape[1]] # get labels from data
+    # check if all labels are the same
+    labCheck = np.sum(labels == labels[0])
+    if labCheck == labels.size:
+        return tree(labels[0]) # returns leaf node, which is a tree structure with only a name
+    else:
+        pass
+
+
+
+
+
+
 
 t = tree('1', [tree('2', [tree('4',[tree('5')])],['att3']), tree('3',tree('6'))], ['att1', 'att2'])
 
@@ -198,6 +213,12 @@ CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as
 CarTrainData = LoadData(CarTrainPath)
 
 data = np.copy(CarTrainData)
+
+# pass training data through ID3 algorithm to generate tree
+carTree = ID3(data)
+
+
+
 
 print(CarTrainData[0,0])
 H = InfoGain(data)
