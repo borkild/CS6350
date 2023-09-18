@@ -125,7 +125,7 @@ def GI(data):
 
 # class to create our trees
 class tree:
-    def __init__(self, name = 'root', children = None, branches = None):
+    def __init__(self, name = 'placehold', children = None, branches = None):
         self.name = str(name) # always convert name to a string, makes keeping track easier
         # branches are the values our attributes can take on
         if branches != None:
@@ -137,7 +137,7 @@ class tree:
             self.branch = []
         # children are the subtrees below our branches
         if children != None:
-            if type(children) != list:
+            if type(children) != list: # in case we add single child node and forget the brackets around it
                 self.child = [children]
             else:
                 self.child = children
@@ -146,7 +146,7 @@ class tree:
         # the indices of the branches match the indices of the subtree from that branch
 
     # function to add child trees and branches
-    def addChild(self, children=None, branches = None):
+    def addST(self, children=None, branches = None):
         self.child.append(children)
         self.branch.append(branches)
 
@@ -160,14 +160,23 @@ class tree:
             newdepth = depth
             for subtree in self.child:
                 cur_stDepth = subtree.calcDepth(depth+1)
-                if cur_stDepth > newdepth:
+                if cur_stDepth > newdepth: # make sure we return the deepest part of the tree
                     newdepth = cur_stDepth
             return newdepth
 
 
     # function to do a forward pass through tree with data
     def forward(self,data):
-        pass
+        # note: data should be a row vector, with the names of the tree nodes corresponding to the indices of the attributes
+        if len(self.branch) == 0 & len(self.child) == 0: # means we have hit a leaf node and need to return the value
+            return self.name
+        else:
+            nodeList = np.arange(0, data.size)
+            nodeList = nodeList.astype(str)
+            print(nodeList)
+            branchVal = nodeList[nodeList == self.name]
+            branchIdx = np.argwhere(self.branch == branchVal)
+
 
 
 
@@ -180,6 +189,8 @@ print(td)
 tnew = tree('2', [tree('1', [tree('-'), tree('+')], ['c','d']), 
                   tree('0', [tree('+'), tree('3', [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
 
+example_data = np.array(['b', 'c', 'f', 'g'])
+output = tnew.forward(example_data)
 
 # load in training data
 CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
