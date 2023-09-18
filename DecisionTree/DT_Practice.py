@@ -102,13 +102,13 @@ def GI(data):
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
         num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
-    GI_S = np.sum(-1*(num_label/dataShape[0])*np.log2(num_label/dataShape[0])) # calculate overall entropy
+    GI_S = 1 - np.sum(np.square(num_label/dataShape[0])) # calculate overall entropy
     attGain = np.empty(dataShape[1] - 1) # array to write entropy for each attribute to
 
     for attIdx in range(dataShape[1] - 1): # iterate through columns of data array -- going through Attributes
         att = np.unique(data[:,attIdx]) # get unique attribute values
         numAttVal = np.empty(len(att)) # array to store number of each attribute value
-        H_S_v = np.empty(len(att)) # array to store entropy of each attribute value, H(S_v)
+        GI_S_v = np.empty(len(att)) # array to store entropy of each attribute value, H(S_v)
 
         for attValIdx in range(len(att)): # iterate through specific values of a single attribute
             attVal_Loc = np.argwhere(data[:,attIdx] == att[attValIdx])
@@ -118,17 +118,39 @@ def GI(data):
             for labelIdx in range(len(labels)): # iterate through labels for specific attribute value
                 attLabel[labelIdx] = np.sum(data[attVal_Loc,dataShape[1]-1] == labels[labelIdx])
             # calculate entropy for attribute subset
-            zeroIdx = np.argwhere(attLabel == 0) # need to adjust for 0 entries to aviod -inf*0 = nan
-            if np.any(zeroIdx):
-                attLabel[attLabel == 0] = numAttVal[attValIdx]
-                H_S_v[attValIdx] = np.sum(-1*(attLabel/numAttVal[attValIdx])*np.log2(attLabel/numAttVal[attValIdx]))
-            else: 
-                H_S_v[attValIdx] = np.sum(-1*(attLabel/numAttVal[attValIdx])*np.log2(attLabel/numAttVal[attValIdx]))
-        # now calculat information gain for each attribute
-        attGain[attIdx] = H_S - np.sum((numAttVal/len(data[:,attIdx]))*H_S_v)
+            GI_S_v[attValIdx] = 1 - np.sum(np.square(attLabel/numAttVal[attValIdx]))
+        # now calculate Gini Index gain for each attribute
+        attGain[attIdx] = GI_S - np.sum((numAttVal/len(data[:,attIdx]))*GI_S_v)
     return attGain
 
 # class to create our trees
+class tree:
+    def __init__(self, name = 'root', children = None, branches = None):
+        self.name = name 
+        self.branch = [] # branches are the values our attributes can take on
+        self.child = [] # children are the subtrees below our branches
+        # the indices of the branches match the indices of the subtree from that branch
+
+    # function to add child trees and branches
+    def addChild(self, children=None, branches = None):
+        self.child = np.append(self.child, children)
+        self.branch = np.append(self.branch, branches)
+
+    # function to calculate depth of tree
+    def calcDepth(self):
+        pass
+
+    # function to do a forward pass through tree with data
+    def forward(self,data):
+        pass
+
+
+
+    
+
+
+
+
 
 # load in training data
 CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
@@ -139,4 +161,5 @@ data = np.copy(CarTrainData)
 print(CarTrainData[0,0])
 H = InfoGain(data)
 MEval = ME(data)
-print(MEval)
+GIval = GI(data)
+print(GIval)
