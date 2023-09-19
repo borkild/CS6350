@@ -14,7 +14,7 @@ def LoadData(dataPath):
             terms = dataArray[lineIdx].strip(' ').split(',')
             term_count = 0
             for val in terms:
-                data[lineIdx,term_count] = val
+                data[lineIdx,term_count] = val.strip('\n') # get rid of new line '\n'
                 term_count += 1
     return data
 
@@ -26,8 +26,11 @@ def LoadAttribute(dataPath):
         attVals = [] # empty list for values of attributes - this will actually be a list of lists
         for lineIdx in range(len(dataArray)): # iterate through list and break data up
             curline = dataArray[lineIdx]
-            if 'label' in curline: # get labels
+            if 'label values' in curline: # get labels
                 labels = dataArray[lineIdx+2].strip(' ').split(',')
+                for labIdx in range(len(labels)):
+                    labels[labIdx] = labels[labIdx].strip(' ')
+                    labels[labIdx] = labels[labIdx].strip('\n')
             if 'attributes' in dataArray[lineIdx]: # get attributes and their values
                 attEnd = lineIdx + 2
                 attLine = ' '
@@ -38,13 +41,12 @@ def LoadAttribute(dataPath):
                 attStart = lineIdx + 2
                 attCount = 0
                 attributes = [] # empty list for attributes
-                attVals = [[] for k in range(attStart,attEnd)] # empty list for values of attributes - this will actually be a list of lists
-                for attIdx in range(attStart,attEnd): # iterate through attributes
+                attVals = [[] for k in range(attStart,attEnd-1)] # empty list for values of attributes - this will actually be a list of lists
+                for attIdx in range(attStart,attEnd-1): # iterate through attributes
                     attLine = dataArray[attIdx]
                     initialSplit = attLine.split(' ') # split based on spaces to start
-                    blankCheck = np.sum(initialSplit == '')
-                    if blankCheck
-                    initialSplit.remove('') # get rid of blank entries
+                    while (initialSplit.count('')): # get rid of blank entries if we need it
+                        initialSplit.remove('') # get rid of blank entries
                     for splitIdx in range(len(initialSplit)): # process inidivual strings in list
                         initialSplit[splitIdx] = initialSplit[splitIdx].strip(',') # get rid of commas
                         initialSplit[splitIdx] = initialSplit[splitIdx].strip(':') # get rid of colon
@@ -158,8 +160,9 @@ def GI(data):
 
 # class to create our trees
 class tree:
-    def __init__(self, name = 'placehold', children = None, branches = None):
+    def __init__(self, idx, name = 'placehold', children = None, branches = None):
         self.name = str(name) # always convert name to a string, makes keeping track easier
+        self.index = idx # column in which attribute lives in data -- used for forward pass through tree
         # branches are the values our attributes can take on
         if branches != None:
             if type(branches) != list:
@@ -205,15 +208,14 @@ class tree:
             return self.name
         else:
             nodeList = np.arange(0, data.size) 
-            nodeList = nodeList.astype(str)
-            branchVal = data[nodeList == self.name]
+            branchVal = data[nodeList == self.index]
             branchIdx = self.branch.index(branchVal[0])
             return self.child[branchIdx].forward(data)
 
 
 
 # function to execute ID3 algorithm
-def ID3(data, gainFunction=InfoGain,max_depth=0): 
+def ID3(data, Attributes, AttributeVals, gainFunction=InfoGain,max_depth=0): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
     # default gain function is information gain, but the user can specify other gain functions
     # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
@@ -264,7 +266,7 @@ print(output)
 CarTrainPath = 'DecisionTree/data/car/train.csv' # assuming car data is in the same folder as script
 CarAttPath = 'DecisionTree/data/car/data-desc.txt'
 CarTrainData = LoadData(CarTrainPath)
-CarLabels = LoadAttribute(CarAttPath)
+CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
 
 data = np.copy(CarTrainData)
 
