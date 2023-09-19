@@ -18,6 +18,44 @@ def LoadData(dataPath):
                 term_count += 1
     return data
 
+# function to load in our attributes
+def LoadAttribute(dataPath):
+    with open(dataPath,'r') as f:
+        dataArray = f.readlines() # read lines from file into list
+        attributes = [] # empty list for attributes
+        attVals = [] # empty list for values of attributes - this will actually be a list of lists
+        for lineIdx in range(len(dataArray)): # iterate through list and break data up
+            curline = dataArray[lineIdx]
+            if 'label' in curline: # get labels
+                labels = dataArray[lineIdx+2].strip(' ').split(',')
+            if 'attributes' in dataArray[lineIdx]: # get attributes and their values
+                attEnd = lineIdx + 2
+                attLine = ' '
+                while attLine != '\n': # find where attributes end
+                    attLine = dataArray[attEnd]
+                    attEnd += 1
+
+                attStart = lineIdx + 2
+                attCount = 0
+                attributes = [] # empty list for attributes
+                attVals = [[] for k in range(attStart,attEnd)] # empty list for values of attributes - this will actually be a list of lists
+                for attIdx in range(attStart,attEnd): # iterate through attributes
+                    attLine = dataArray[attIdx]
+                    initialSplit = attLine.split(' ') # split based on spaces to start
+                    blankCheck = np.sum(initialSplit == '')
+                    if blankCheck
+                    initialSplit.remove('') # get rid of blank entries
+                    for splitIdx in range(len(initialSplit)): # process inidivual strings in list
+                        initialSplit[splitIdx] = initialSplit[splitIdx].strip(',') # get rid of commas
+                        initialSplit[splitIdx] = initialSplit[splitIdx].strip(':') # get rid of colon
+                        initialSplit[splitIdx] = initialSplit[splitIdx].strip('.\n')
+                    attributes.append(initialSplit[0]) # first entry in list should be attribute
+                    attVals[attCount] = initialSplit[1:len(initialSplit)] # rest of entries are attribute values
+                    attCount += 1
+               
+                
+    return labels, attributes, attVals
+
 
 # function to calculate Information Gain
 def InfoGain(data):
@@ -224,7 +262,9 @@ print(output)
 
 # load in training data
 CarTrainPath = 'DecisionTree/data/car/train.csv' # assuming car data is in the same folder as script
+CarAttPath = 'DecisionTree/data/car/data-desc.txt'
 CarTrainData = LoadData(CarTrainPath)
+CarLabels = LoadAttribute(CarAttPath)
 
 data = np.copy(CarTrainData)
 
