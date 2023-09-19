@@ -192,6 +192,15 @@ def ID3(data, gainFunction=InfoGain,max_depth=0):
         # find all possible values the attribute can take on
         possAttVal = np.unique(data[:,att]) 
         # split up data based on attribute
+        subTrees = []
+        for attIdx in len(possAttVal):
+            valIdx = np.argwhere(data[:,att] == possAttVal[attIdx]) # return row indices 
+            subData = data[valIdx,:] # write subset of data to new array
+            subData = np.delete(subData, att, axis=1)
+            # now repeat ID3
+            subTrees[attIdx] = ID3(data, gainFunction, max_depth)
+        # Create and return tree
+        return tree(att, subTrees, possAttVal)
         
 
 
