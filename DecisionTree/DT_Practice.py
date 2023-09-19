@@ -160,9 +160,10 @@ def GI(data):
 
 # class to create our trees
 class tree:
-    def __init__(self, idx, name = 'placehold', children = None, branches = None):
+    def __init__(self, name = 'placehold', idx=None, children = None, branches = None):
         self.name = str(name) # always convert name to a string, makes keeping track easier
-        self.index = idx # column in which attribute lives in data -- used for forward pass through tree
+        # column in which attribute lives in data -- used for forward pass through tree -- if = None means it is a leafnode
+        self.index = idx 
         # branches are the values our attributes can take on
         if branches != None:
             if type(branches) != list:
@@ -204,7 +205,7 @@ class tree:
     # function to do a forward pass through tree with data
     def forward(self,data):
         # note: data should be a row vector, with the names of the tree nodes corresponding to the indices of the attributes
-        if len(self.branch) == 0 & len(self.child) == 0: # means we have hit a leaf node and need to return the value
+        if self.index == None: # means we have hit a leaf node and need to return the value
             return self.name
         else:
             nodeList = np.arange(0, data.size) 
@@ -240,23 +241,13 @@ def ID3(data, Attributes, AttributeVals, gainFunction=InfoGain,max_depth=0):
             # now repeat ID3
             subTrees[attIdx] = ID3(data, gainFunction, max_depth)
         # Create and return tree
-        return tree(att, subTrees, possAttVal)
+        return tree(Attributes[att], subTrees, possAttVal)
         
 
 
 
-
-
-
-
-t = tree('1', [tree('2', [tree('4',[tree('5')])],['att3']), tree('3',tree('6'))], ['att1', 'att2'])
-
-td = t.calcDepth()
-
-print(td)
-
-tnew = tree('2', [tree('1', [tree('-'), tree('+')], ['c','d']), 
-                  tree('0', [tree('+'), tree('3', [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
+tnew = tree('2', 2, [tree('1', 1, [tree('-'), tree('+')], ['c','d']), 
+                  tree('0', 0, [tree('+'), tree('3', 3, [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
 
 example_data = np.array(['b', 'c', 'f', 'g'])
 output = tnew.forward(example_data)
