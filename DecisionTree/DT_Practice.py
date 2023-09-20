@@ -224,6 +224,43 @@ def testTree(tree, testData):
     acc = (correctCount/dataShape[0])*100
     return acc
 
+# function to convert numerical variables to binary
+def convertNumData(data, attributes):
+    for idx in range(len(attributes)): # go through attributes
+        if data[0,idx].strip('-').isnumeric(): # get rid of negative sign (if present) and check if attribute is numeric
+            curVals = data[:,idx].astype(float)
+            medVal = np.median(curVals) # find median numerical value
+            convertBinary = curVals > medVal
+            data[:,idx] = convertBinary.astype(str)
+    return data  
+
+
+# function to convert unknowns into most common attribute
+def removeUnknown(oriData, oriAttributes, oriAttributeVals):
+    # copy data to aviod changing original
+    data = oriData.copy()
+    attributes = oriAttributes.copy()
+    attributeVals = oriAttributeVals.copy()
+    for attIdx in range(len(attributes)): # iterate through each attribute
+        curVals = attributeVals[attIdx].copy() # again copy to aviod changing original
+        # check if unknown is an option for the data value
+        if curVals.count('unknown') > 0:
+            # delete unknown from attribute values list
+            curVals.remove('unknown')
+            valCount = np.empty(len(curVals))
+            # now calculate the most common of the remaining attribute values
+            for attValIdx in range(len(curVals)):
+                valCount[attValIdx] = np.sum(data[:,attIdx] == curVals[attValIdx]) 
+            replaceVal = curVals[np.argmax(valCount)] # attribute value that will replace unknowns
+            # replace unknowns in data array
+            data[data[:,attIdx] == 'unknown',attIdx] = replaceVal
+            # update attributeVals list so it no longer contains unknown
+            attributeVals[attIdx] = curVals
+    return data, attributeVals
+
+
+
+
 
 #### Problem 2a #####
 # function to execute ID3 algorithm
@@ -340,8 +377,8 @@ for treeDepth in range(1,7):
     TrainAccur = testTree(carTree, CarTrainData)
     TestAccur = testTree(carTree,CarTestData)
     print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(TrainAccur))
-    print('Test Accuracy: {} %'.format(TestAccur))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
     del carTree
 
 print('\n')
@@ -352,8 +389,8 @@ for treeDepth in range(1,7):
     TrainAccur = testTree(carTree, CarTrainData)
     TestAccur = testTree(carTree,CarTestData)
     print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(TrainAccur))
-    print('Test Accuracy: {} %'.format(TestAccur))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
     del carTree
 
 print('\n')
@@ -364,8 +401,8 @@ for treeDepth in range(1,7):
     TrainAccur = testTree(carTree, CarTrainData)
     TestAccur = testTree(carTree,CarTestData)
     print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(TrainAccur))
-    print('Test Accuracy: {} %'.format(TestAccur))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
     del carTree
 
 
@@ -385,6 +422,96 @@ contact = ["unknown","telephone","cellular"]
 month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 poutcome = ["unknown","other","failure","success"]
 
-BankAttVals = [['0', '1'], job, marital, education, default, ['0', '1'], housing, loan, contact, ['0', '1'], month, 
-               ['0', '1'], ['0', '1'], ['0', '1'], ['0', '1'], poutcome]
-# now we must convert numerical categories to a binary 0 or 1
+BankAttVals = [['False', 'True'], job, marital, education, default, ['False', 'True'], housing, loan, contact, ['False', 'True'], month, 
+               ['False', 'True'], ['False', 'True'], ['False', 'True'], ['False', 'True'], poutcome]
+# load training data in
+BankTrainPath = 'data/bank/train.csv'
+BankTrainData = LoadData(BankTrainPath)
+# load testing data
+BankTestPath = 'data/bank/test.csv'
+BankTestData = LoadData(BankTestPath)
+
+# now we must convert numerical categories to a binary
+BankTrainData = convertNumData(BankTrainData, BankAtts)
+BankTestData = convertNumData(BankTestData, BankAtts)
+
+#### Problem 3a ####
+# using information gain
+print('\n')
+print('Leaving unknowns in dataset')
+print('When using Information Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
+
+# using majority error gain
+print('\n')
+print('When using Majority Error Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
+
+# using gini index gain
+print('\n')
+print('When using Majority Error Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
+
+#### Problem 3b ####
+# now we preprocess the unknown values, changing them to the most common attribute label
+BankTrainData, BankAttValsB = removeUnknown(BankTrainData, BankAtts, BankAttVals)
+BankTestData, BankAttValsC = removeUnknown(BankTestData, BankAtts, BankAttVals)
+
+# repeat code from above, calculating training and testing accuracy with variable tree depth
+# using information gain
+print('\n')
+print('Removing unknowns from dataset')
+print('When using Information Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
+
+# using majority error gain
+print('\n')
+print('When using Majority Error Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
+
+# using gini index gain
+print('\n')
+print('When using Majority Error Gain')
+for treeDepth in range(1,17):
+    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
+    TrainAccur = testTree(bankTree, BankTrainData)
+    TestAccur = testTree(bankTree, BankTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+    del bankTree
