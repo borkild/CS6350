@@ -102,8 +102,6 @@ def ME(data):
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
         num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
-    print(np.sum(num_label))
-    print(num_label.max)
     ME_S = (np.sum(num_label) - np.max(num_label))/np.sum(num_label) # calculate overall entropy
     MEGain = np.empty(dataShape[1] - 1) # array to write ME for each attribute to
 
@@ -132,7 +130,6 @@ def GI(data):
     dataShape = data.shape
     # start by calculating overall entropy
     labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
-    print(labels.size)
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
         num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
@@ -219,7 +216,7 @@ def testTree(tree, testData):
     dataShape = testData.shape
     correctCount = 0
     for rowIdx in range(dataShape[0]-1): # iterate through the columns
-        curData = testData[rowIdx,dataShape[1]-2] # get data without labels
+        curData = testData[rowIdx,0:dataShape[1]-1] # get data without labels
         treeOut = tree.forward(curData) # pass current row through tree
         if treeOut == testData[rowIdx, dataShape[1]-1]:
             correctCount += 1 # if labels match, add 1 to count
@@ -245,6 +242,7 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
         gains = gainFunction(data) # calculate information gain using selected function
         # get attribute with maximum information gain
         att = np.argmax(gains)
+        trueAttIdx = AttIdx[att]
         # split up data based on attribute
         subTrees = []
         for attIdx in range(len(AttributeVals[att])):
@@ -336,15 +334,57 @@ data = np.copy(CarTrainData)
 
 
 # generate tree of depths 1-6 with information gain and run on test set
-for treeDepth in range(1,6):
+print('Using Information Gain: ')
+for treeDepth in range(1,7):
     carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth)
-    
+    TrainAccur = testTree(carTree, CarTrainData)
+    TestAccur = testTree(carTree,CarTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(TrainAccur))
+    print('Test Accuracy: {} %'.format(TestAccur))
+    del carTree
 
-
+print('\n')
 # generate tree of depths 1-6 with majority error
+print('Using Majority Error Gain: ')
+for treeDepth in range(1,7):
+    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=ME)
+    TrainAccur = testTree(carTree, CarTrainData)
+    TestAccur = testTree(carTree,CarTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(TrainAccur))
+    print('Test Accuracy: {} %'.format(TestAccur))
+    del carTree
 
-
+print('\n')
 # generate tree of depths 1-6 with gini index
+print('Using Gini Index Gain: ')
+for treeDepth in range(1,7):
+    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=GI)
+    TrainAccur = testTree(carTree, CarTrainData)
+    TestAccur = testTree(carTree,CarTestData)
+    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+    print('Train Accuracy: {} %'.format(TrainAccur))
+    print('Test Accuracy: {} %'.format(TestAccur))
+    del carTree
 
 
+#### Problem 3 ####
 
+# here the attributes are not as easy to grab from the file (and are not all present) as the previous ones, so we maunually create them
+BankAtts = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 
+            'campaign', 'pdays', 'previous', 'poutcome']
+job = ["admin.","unknown","unemployed","management","housemaid","entrepreneur","student",
+       "blue-collar","self-employed","retired","technician","services"]
+marital = ["married","divorced","single"]
+education = ["unknown","secondary","primary","tertiary"]
+default = ["yes","no"]
+housing = ["yes","no"]
+loan = ["yes","no"]
+contact = ["unknown","telephone","cellular"]
+month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+poutcome = ["unknown","other","failure","success"]
+
+BankAttVals = [['0', '1'], job, marital, education, default, ['0', '1'], housing, loan, contact, ['0', '1'], month, 
+               ['0', '1'], ['0', '1'], ['0', '1'], ['0', '1'], poutcome]
+# now we must convert numerical categories to a binary 0 or 1
