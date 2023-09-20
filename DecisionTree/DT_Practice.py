@@ -216,11 +216,12 @@ class tree:
 
 
 # function to execute ID3 algorithm
-def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoGain): 
+def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoGain, count = 0): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
     # default gain function is information gain, but the user can specify other gain functions
     # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
 
+    count += 1
     labels = data[:,data.shape[1]-1] # get labels from data
     # check if all labels are the same
     labCheck = np.sum(labels == labels[0])
@@ -250,7 +251,12 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
                     # use most common label for final branch for each attribute
                     for attValIdx in range(len(AttributeVals[att])):
                         labelVals = labels[valIdx]
-                        
+                        unqLab = np.unique(labelVals)
+                        numLabel = np.empty(unqLab.size)
+                        for labIdx in range(len(unqLab)):
+                            numLabel[labIdx] = np.count_nonzero(labelVals == unqLab[labIdx])
+                        newName = unqLab[np.argmax(numLabel)]
+                        subTrees.append(tree(newName))
                 else: # otherwise we will delete attribute before recursing
                     newAttributes = Attributes.copy()
                     newAttributeVals = AttributeVals.copy()
@@ -261,7 +267,7 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
                     del newAttributeVals[att] 
                     del newAttIdx[att]
 
-                # check to make sure tree isn't bigger than max depth
+                # check to make sure tree isn't bigger than max depth -- use counter
 
 
                 # now repeat ID3
@@ -293,6 +299,10 @@ TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
 TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
 
 TennisTree = ID3(TennisData, TennisAtts, TennisAttVal, list(range(len(TennisAtts))))
+TennisInput = np.array(['O', 'H', 'H', 'W'])
+tenout = TennisTree.forward(TennisInput)
+print(tenout)
+
 # pass training data through ID3 algorithm to generate tree
 carTree = ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))))
 
