@@ -216,7 +216,7 @@ class tree:
 
 
 # function to execute ID3 algorithm
-def ID3(data, Attributes, AttributeVals, gainFunction=InfoGain,max_depth=0): 
+def ID3(data, Attributes, AttributeVals, AttIdx, gainFunction=InfoGain,max_depth=0): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
     # default gain function is information gain, but the user can specify other gain functions
     # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
@@ -230,18 +230,39 @@ def ID3(data, Attributes, AttributeVals, gainFunction=InfoGain,max_depth=0):
         gains = gainFunction(data) # calculate information gain using selected function
         # get attribute with maximum information gain
         att = np.argmax(gains)
-        # find all possible values the attribute can take on
-        possAttVal = np.unique(data[:,att]) 
         # split up data based on attribute
         subTrees = []
-        for attIdx in len(possAttVal):
-            valIdx = np.argwhere(data[:,att] == possAttVal[attIdx]) # return row indices 
-            subData = data[valIdx,:] # write subset of data to new array
-            subData = np.delete(subData, att, axis=1)
-            # now repeat ID3
-            subTrees[attIdx] = ID3(data, gainFunction, max_depth)
+        for attIdx in len(AttributeVals[att]):
+            valIdx = np.argwhere(data[:,att] == AttributeVals[att][attIdx]) # return row indices 
+            # if row vector is empty, then we need to assign the value the most common label
+            if valIdx.size == 0:
+                pass
+            else:
+                subData = data[valIdx,:] # write subset of data to new array
+                subData = np.delete(subData, att, axis=1)
+                
+                # check to make sure we still have attributes if we delete the one we just processed
+                if len(Attributes == 1):
+                    # use most common label for final branch for each attribute
+                    for attValIdx in range(len(AttributeVals[att])):
+                        labelVals = labels[valIdx]
+
+                else: # otherwise we will delete attribute before recursing
+                    newAttributes = Attributes
+                    newAttributeVals = AttributeVals
+                    newAttIdx = AttIdx
+                    # delete attribute we just used from lists
+                    del newAttributes[att]
+                    del newAttributeVals[att] 
+                    del newAttIdx[att]
+
+                # check to make sure tree isn't bigger than max depth
+
+
+                # now repeat ID3
+                subTrees[attIdx] = ID3(data, Attributes, AttributeVals, gainFunction, max_depth)
         # Create and return tree
-        return tree(Attributes[att], subTrees, possAttVal)
+        return tree(Attributes[att], att, subTrees, AttributeVals[att])
         
 
 
@@ -262,7 +283,7 @@ CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
 data = np.copy(CarTrainData)
 
 # pass training data through ID3 algorithm to generate tree
-carTree = ID3(data)
+carTree = ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))))
 
 
 
