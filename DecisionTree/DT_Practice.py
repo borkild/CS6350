@@ -99,7 +99,6 @@ def ME(data):
     dataShape = data.shape
     # start by calculating overall entropy
     labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
-    print(labels.size)
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
         num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
@@ -214,7 +213,22 @@ class tree:
             return self.child[branchIdx].forward(data)
 
 
+# function to handle testing of our trees, calculating the accuracy
+def testTree(tree, testData):
+    # we will iterate through the test data, passing it through the tree and checking the answer
+    dataShape = testData.shape
+    correctCount = 0
+    for rowIdx in range(dataShape[0]-1): # iterate through the columns
+        curData = testData[rowIdx,dataShape[1]-2] # get data without labels
+        treeOut = tree.forward(curData) # pass current row through tree
+        if treeOut == testData[rowIdx, dataShape[1]-1]:
+            correctCount += 1 # if labels match, add 1 to count
+    # calculate percent correct
+    acc = (correctCount/dataShape[0])*100
+    return acc
 
+
+#### Problem 2a #####
 # function to execute ID3 algorithm
 def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoGain, count = 0): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
@@ -268,49 +282,69 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
                     del newAttIdx[att]
 
                 # check to make sure tree isn't bigger than max depth -- use counter
-
-
-                # now repeat ID3
-                subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction))
+                if (max_depth != 0) & (count == max_depth): 
+                    # if tree is at the max_depth, then we need to return leaf node for the attribute values
+                    posslabels = np.unique(labels)
+                    labCount = np.empty(posslabels.size)
+                    for labIdx in range(len(posslabels)):
+                        labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
+                    subTrees.append(tree(posslabels[np.argmax(labCount)])) # create leafnode of most common label
+                else:
+                    # repeat ID3
+                    subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction, count))
         # Create and return tree
         return tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
         
 
+# This was all testing stuff to validate functions
+
+# tnew = tree('2', 2, [tree('1', 1, [tree('-'), tree('+')], ['c','d']), 
+#                   tree('0', 0, [tree('+'), tree('3', 3, [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
+
+# example_data = np.array(['b', 'c', 'f', 'g'])
+# output = tnew.forward(example_data)
+# print(output)
+
+# TennisPath = 'data/TennisData.csv'
+# TennisData = LoadData(TennisPath)
+# TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
+# TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
+
+# #TennisTree = ID3(TennisData, TennisAtts, TennisAttVal, list(range(len(TennisAtts))))
+# #TennisInput = np.array(['O', 'H', 'H', 'W'])
+# #tenout = TennisTree.forward(TennisInput)
+# #print(tenout)
+
+# MEval = ME(TennisData)
+# print(MEval)
+# GIval = GI(TennisData)
+# print(GIval)
 
 
-tnew = tree('2', 2, [tree('1', 1, [tree('-'), tree('+')], ['c','d']), 
-                  tree('0', 0, [tree('+'), tree('3', 3, [tree('-'), tree('+')], ['g', 'h'])], ['a', 'b'])], ['e', 'f'])
-
-example_data = np.array(['b', 'c', 'f', 'g'])
-output = tnew.forward(example_data)
-print(output)
-
+###### Problem 2b #######
 # load in training data
 CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
 CarAttPath = 'data/car/data-desc.txt'
 CarTrainData = LoadData(CarTrainPath)
 CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
+# load testing data
+CarTestPath = 'data/car/test.csv'
+CarTestData = LoadData(CarTestPath)
+
 
 data = np.copy(CarTrainData)
 
-TennisPath = 'data/TennisData.csv'
-TennisData = LoadData(TennisPath)
-TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
-TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
 
-TennisTree = ID3(TennisData, TennisAtts, TennisAttVal, list(range(len(TennisAtts))))
-TennisInput = np.array(['O', 'H', 'H', 'W'])
-tenout = TennisTree.forward(TennisInput)
-print(tenout)
+# generate tree of depths 1-6 with information gain and run on test set
+for treeDepth in range(1,6):
+    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth)
+    
 
-# pass training data through ID3 algorithm to generate tree
-carTree = ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))))
 
+# generate tree of depths 1-6 with majority error
+
+
+# generate tree of depths 1-6 with gini index
 
 
 
-print(CarTrainData[0,0])
-H = InfoGain(data)
-MEval = ME(data)
-GIval = GI(data)
-print(GIval)
