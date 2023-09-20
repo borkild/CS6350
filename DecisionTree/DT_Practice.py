@@ -216,7 +216,7 @@ class tree:
 
 
 # function to execute ID3 algorithm
-def ID3(data, Attributes, AttributeVals, AttIdx, gainFunction=InfoGain,max_depth=0): 
+def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoGain): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
     # default gain function is information gain, but the user can specify other gain functions
     # if max_depth is not set, then we will generate the tree until standard ID3 stop conditions are met
@@ -232,25 +232,30 @@ def ID3(data, Attributes, AttributeVals, AttIdx, gainFunction=InfoGain,max_depth
         att = np.argmax(gains)
         # split up data based on attribute
         subTrees = []
-        for attIdx in len(AttributeVals[att]):
+        for attIdx in range(len(AttributeVals[att])):
             valIdx = np.argwhere(data[:,att] == AttributeVals[att][attIdx]) # return row indices 
             # if row vector is empty, then we need to assign the value the most common label
             if valIdx.size == 0:
-                pass
+                posslabels = np.unique(labels)
+                labCount = np.empty(posslabels.size)
+                for labIdx in range(len(posslabels)):
+                    labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
+                subTrees.append(tree(posslabels[np.argmax(labCount)])) # create leafnode
             else:
-                subData = data[valIdx,:] # write subset of data to new array
-                subData = np.delete(subData, att, axis=1)
+                subData = data[valIdx[:,0],:] # write subset of data to new array
+                subData = np.delete(subData, att, 1)
                 
                 # check to make sure we still have attributes if we delete the one we just processed
-                if len(Attributes == 1):
+                if len(Attributes) == 1:
                     # use most common label for final branch for each attribute
                     for attValIdx in range(len(AttributeVals[att])):
                         labelVals = labels[valIdx]
-
+                        
                 else: # otherwise we will delete attribute before recursing
-                    newAttributes = Attributes
-                    newAttributeVals = AttributeVals
-                    newAttIdx = AttIdx
+                    newAttributes = Attributes.copy()
+                    newAttributeVals = AttributeVals.copy()
+                    newAttIdx = AttIdx.copy()
+                    trueAttIdx = newAttIdx[att]
                     # delete attribute we just used from lists
                     del newAttributes[att]
                     del newAttributeVals[att] 
@@ -260,9 +265,9 @@ def ID3(data, Attributes, AttributeVals, AttIdx, gainFunction=InfoGain,max_depth
 
 
                 # now repeat ID3
-                subTrees[attIdx] = ID3(data, Attributes, AttributeVals, gainFunction, max_depth)
+                subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction))
         # Create and return tree
-        return tree(Attributes[att], att, subTrees, AttributeVals[att])
+        return tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
         
 
 
@@ -275,13 +280,19 @@ output = tnew.forward(example_data)
 print(output)
 
 # load in training data
-CarTrainPath = 'DecisionTree/data/car/train.csv' # assuming car data is in the same folder as script
-CarAttPath = 'DecisionTree/data/car/data-desc.txt'
+CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
+CarAttPath = 'data/car/data-desc.txt'
 CarTrainData = LoadData(CarTrainPath)
 CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
 
 data = np.copy(CarTrainData)
 
+TennisPath = 'data/TennisData.csv'
+TennisData = LoadData(TennisPath)
+TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
+TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
+
+TennisTree = ID3(TennisData, TennisAtts, TennisAttVal, list(range(len(TennisAtts))))
 # pass training data through ID3 algorithm to generate tree
 carTree = ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))))
 
