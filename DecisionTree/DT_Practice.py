@@ -463,7 +463,7 @@ for treeDepth in range(1,17):
 
 # using gini index gain
 print('\n')
-print('When using Majority Error Gain')
+print('When using Gini Index Gain')
 for treeDepth in range(1,17):
     bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
     TrainAccur = testTree(bankTree, BankTrainData)
@@ -506,7 +506,7 @@ for treeDepth in range(1,17):
 
 # using gini index gain
 print('\n')
-print('When using Majority Error Gain')
+print('When using Gini Index Gain')
 for treeDepth in range(1,17):
     bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
     TrainAccur = testTree(bankTree, BankTrainData)
