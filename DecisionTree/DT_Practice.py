@@ -356,162 +356,164 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
 # print(GIval)
 
 
-###### Problem 2b #######
-# load in training data
-CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
-CarAttPath = 'data/car/data-desc.txt'
-CarTrainData = LoadData(CarTrainPath)
-CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
-# load testing data
-CarTestPath = 'data/car/test.csv'
-CarTestData = LoadData(CarTestPath)
+if __name__ == "__main__": # only run this part if this is the main script so we can call functions we made from other places
+
+    ###### Problem 2b #######
+    # load in training data
+    CarTrainPath = 'data/car/train.csv' # assuming car data is in the same folder as script
+    CarAttPath = 'data/car/data-desc.txt'
+    CarTrainData = LoadData(CarTrainPath)
+    CarLabels, CarAtts, CarAttVals = LoadAttribute(CarAttPath)
+    # load testing data
+    CarTestPath = 'data/car/test.csv'
+    CarTestData = LoadData(CarTestPath)
 
 
-data = np.copy(CarTrainData)
+    data = np.copy(CarTrainData)
 
 
-# generate tree of depths 1-6 with information gain and run on test set
-print('Using Information Gain: ')
-for treeDepth in range(1,7):
-    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth)
-    TrainAccur = testTree(carTree, CarTrainData)
-    TestAccur = testTree(carTree,CarTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del carTree
+    # generate tree of depths 1-6 with information gain and run on test set
+    print('Using Information Gain: ')
+    for treeDepth in range(1,7):
+        carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth)
+        TrainAccur = testTree(carTree, CarTrainData)
+        TestAccur = testTree(carTree,CarTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del carTree
 
-print('\n')
-# generate tree of depths 1-6 with majority error
-print('Using Majority Error Gain: ')
-for treeDepth in range(1,7):
-    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=ME)
-    TrainAccur = testTree(carTree, CarTrainData)
-    TestAccur = testTree(carTree,CarTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del carTree
+    print('\n')
+    # generate tree of depths 1-6 with majority error
+    print('Using Majority Error Gain: ')
+    for treeDepth in range(1,7):
+        carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=ME)
+        TrainAccur = testTree(carTree, CarTrainData)
+        TestAccur = testTree(carTree,CarTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del carTree
 
-print('\n')
-# generate tree of depths 1-6 with gini index
-print('Using Gini Index Gain: ')
-for treeDepth in range(1,7):
-    carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=GI)
-    TrainAccur = testTree(carTree, CarTrainData)
-    TestAccur = testTree(carTree,CarTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del carTree
+    print('\n')
+    # generate tree of depths 1-6 with gini index
+    print('Using Gini Index Gain: ')
+    for treeDepth in range(1,7):
+        carTree =  ID3(data, CarAtts, CarAttVals, list(range(len(CarAtts))), treeDepth, gainFunction=GI)
+        TrainAccur = testTree(carTree, CarTrainData)
+        TestAccur = testTree(carTree,CarTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del carTree
 
 
-#### Problem 3 ####
+    #### Problem 3 ####
 
-# here the attributes are not as easy to grab from the file (and are not all present) as the previous ones, so we maunually create them
-BankAtts = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 
-            'campaign', 'pdays', 'previous', 'poutcome']
-job = ["admin.","unknown","unemployed","management","housemaid","entrepreneur","student",
-       "blue-collar","self-employed","retired","technician","services"]
-marital = ["married","divorced","single"]
-education = ["unknown","secondary","primary","tertiary"]
-default = ["yes","no"]
-housing = ["yes","no"]
-loan = ["yes","no"]
-contact = ["unknown","telephone","cellular"]
-month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-poutcome = ["unknown","other","failure","success"]
+    # here the attributes are not as easy to grab from the file (and are not all present) as the previous ones, so we maunually create them
+    BankAtts = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 
+                'campaign', 'pdays', 'previous', 'poutcome']
+    job = ["admin.","unknown","unemployed","management","housemaid","entrepreneur","student",
+        "blue-collar","self-employed","retired","technician","services"]
+    marital = ["married","divorced","single"]
+    education = ["unknown","secondary","primary","tertiary"]
+    default = ["yes","no"]
+    housing = ["yes","no"]
+    loan = ["yes","no"]
+    contact = ["unknown","telephone","cellular"]
+    month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+    poutcome = ["unknown","other","failure","success"]
 
-BankAttVals = [['False', 'True'], job, marital, education, default, ['False', 'True'], housing, loan, contact, ['False', 'True'], month, 
-               ['False', 'True'], ['False', 'True'], ['False', 'True'], ['False', 'True'], poutcome]
-# load training data in
-BankTrainPath = 'data/bank/train.csv'
-BankTrainData = LoadData(BankTrainPath)
-# load testing data
-BankTestPath = 'data/bank/test.csv'
-BankTestData = LoadData(BankTestPath)
+    BankAttVals = [['False', 'True'], job, marital, education, default, ['False', 'True'], housing, loan, contact, ['False', 'True'], month, 
+                ['False', 'True'], ['False', 'True'], ['False', 'True'], ['False', 'True'], poutcome]
+    # load training data in
+    BankTrainPath = 'data/bank/train.csv'
+    BankTrainData = LoadData(BankTrainPath)
+    # load testing data
+    BankTestPath = 'data/bank/test.csv'
+    BankTestData = LoadData(BankTestPath)
 
-# now we must convert numerical categories to a binary
-BankTrainData = convertNumData(BankTrainData, BankAtts)
-BankTestData = convertNumData(BankTestData, BankAtts)
+    # now we must convert numerical categories to a binary
+    BankTrainData = convertNumData(BankTrainData, BankAtts)
+    BankTestData = convertNumData(BankTestData, BankAtts)
 
-#### Problem 3a ####
-# using information gain
-print('\n')
-print('Leaving unknowns in dataset')
-print('When using Information Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    #### Problem 3a ####
+    # using information gain
+    print('\n')
+    print('Leaving unknowns in dataset')
+    print('When using Information Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
 
-# using majority error gain
-print('\n')
-print('When using Majority Error Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    # using majority error gain
+    print('\n')
+    print('When using Majority Error Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
 
-# using gini index gain
-print('\n')
-print('When using Gini Index Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    # using gini index gain
+    print('\n')
+    print('When using Gini Index Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttVals, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
 
-#### Problem 3b ####
-# now we preprocess the unknown values, changing them to the most common attribute label
-BankTrainData, BankAttValsB = removeUnknown(BankTrainData, BankAtts, BankAttVals)
-BankTestData, BankAttValsC = removeUnknown(BankTestData, BankAtts, BankAttVals)
+    #### Problem 3b ####
+    # now we preprocess the unknown values, changing them to the most common attribute label
+    BankTrainData, BankAttValsB = removeUnknown(BankTrainData, BankAtts, BankAttVals)
+    BankTestData, BankAttValsC = removeUnknown(BankTestData, BankAtts, BankAttVals)
 
-# repeat code from above, calculating training and testing accuracy with variable tree depth
-# using information gain
-print('\n')
-print('Removing unknowns from dataset')
-print('When using Information Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    # repeat code from above, calculating training and testing accuracy with variable tree depth
+    # using information gain
+    print('\n')
+    print('Removing unknowns from dataset')
+    print('When using Information Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
 
-# using majority error gain
-print('\n')
-print('When using Majority Error Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    # using majority error gain
+    print('\n')
+    print('When using Majority Error Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=ME)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
 
-# using gini index gain
-print('\n')
-print('When using Gini Index Gain')
-for treeDepth in range(1,17):
-    bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
-    TrainAccur = testTree(bankTree, BankTrainData)
-    TestAccur = testTree(bankTree, BankTestData)
-    print('The accuracy for a tree with depth {} is: '.format(treeDepth))
-    print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
-    print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
-    del bankTree
+    # using gini index gain
+    print('\n')
+    print('When using Gini Index Gain')
+    for treeDepth in range(1,17):
+        bankTree = ID3(BankTrainData, BankAtts, BankAttValsB, list(range(len(BankAtts))), treeDepth, gainFunction=GI)
+        TrainAccur = testTree(bankTree, BankTrainData)
+        TestAccur = testTree(bankTree, BankTestData)
+        print('The accuracy for a tree with depth {} is: '.format(treeDepth))
+        print('Train Accuracy: {} %'.format(round(TrainAccur, 3)))
+        print('Test Accuracy: {} %'.format(round(TestAccur, 3)))
+        del bankTree
