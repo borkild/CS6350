@@ -42,65 +42,43 @@ def WeightInfoGain(data, weights):
         attGain[attIdx] = H_S - np.sum((numAttVal/len(data[:,attIdx]))*H_S_v)
     return attGain
 
-
-def stump(data, Attributes, AttributeVals, AttIdx,  gainFunction=WeightInfoGain, weights): 
+# function to generate a tree with depth of 2 based on weighted info gain of training data
+def stump(data, Attributes, AttributeVals, AttIdx, weights, gainFunction=WeightInfoGain): 
     #Note: We assume the data is a numpy array of strings, with the corresponding label in the final column
     # default gain function is information gain, but the user can specify other gain functions
-    max_depth = 2
 
-    count += 1
     labels = data[:,data.shape[1]-1] # get labels from data
     # check if all labels are the same
     labCheck = np.sum(labels == labels[0])
     if labCheck == labels.size:
         return DT.tree(labels[0]) # returns leaf node, which is a tree structure with only a name
     else:
-        gains = gainFunction(data) # calculate information gain using selected function
+        gains = gainFunction(data, weights) # calculate information gain using selected function -- must accept data and weights
         # get attribute with maximum information gain
         att = np.argmax(gains)
         trueAttIdx = AttIdx[att]
         # split up data based on attribute
         subTrees = []
+        # find most common label for attribute output
         for attIdx in range(len(AttributeVals[att])):
             valIdx = np.argwhere(data[:,att] == AttributeVals[att][attIdx]) # return row indices 
-            # if row vector is empty, then we need to assign the value the most common label
+            # if row vector is empty, then we need to assign the value the most common label of whole dataset
             if valIdx.size == 0:
                 posslabels = np.unique(labels)
                 labCount = np.empty(posslabels.size)
                 for labIdx in range(len(posslabels)):
                     labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
-                subTrees.append(DT.tree(posslabels[np.argmax(labCount)])) # create leafnode
-            else:
-                subData = data[valIdx[:,0],:] # write subset of data to new array
-                subData = np.delete(subData, att, 1)
-                
-                # check to make sure we still have attributes if we delete the one we just processed
-                if len(Attributes) == 1:
-                    # use most common label for final branch for each attribute
-                    for attValIdx in range(len(AttributeVals[att])):
-                        labelVals = labels[valIdx]
-                        unqLab = np.unique(labelVals)
-                        numLabel = np.empty(unqLab.size)
-                        for labIdx in range(len(unqLab)):
-                            numLabel[labIdx] = np.count_nonzero(labelVals == unqLab[labIdx])
-                        newName = unqLab[np.argmax(numLabel)]
-                        subTrees.append(DT.tree(newName))
-                else: # otherwise we will delete attribute before recursing
-                    newAttributes = Attributes.copy()
-                    newAttributeVals = AttributeVals.copy()
-                    newAttIdx = AttIdx.copy()
-                    trueAttIdx = newAttIdx[att]
-                    # delete attribute we just used from lists
-                    del newAttributes[att]
-                    del newAttributeVals[att] 
-                    del newAttIdx[att]
-        # Create and return tree
-        return tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
+                subTrees.append(DT.tree(posslabels[np.argmax(labCount)])) # create leafnode with most common output of dataset
+            else: # we find most common output to assign as leaf node
+                posslabels = np.unique(labels)
+                labCount = np.empty(posslabels.size)
+                for labIdx in range(len(posslabels)):
+                    labCount[labIdx] = np.count_nonzero(labels[valIdx] == posslabels[labIdx])
+                subTrees.append(DT.tree(posslabels[np.argmax(labCount)])) # add to list of leafnodes
+        # Create and return tree with depth of 2
+        return DT.tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
 
 
-# function to generate a tree with depth of 2 based on weighted info gain of training data
-def generateTreeStumps(trainData, Attributes, AttributeVals, weights): 
-    treeStump = DT.ID3(trainData, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoGain)
 
 
 # function to perform Adaboost algorithm
