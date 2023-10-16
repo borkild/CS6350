@@ -80,11 +80,50 @@ def stump(data, Attributes, AttributeVals, AttIdx, weights, gainFunction=WeightI
         return DT.tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
 
 
+# this function computes the weighted error of a classifier
+def computeWeightError(classifier, weights, trainData):
+    labels = trainData[:,trainData.shape[1]-1] # labels should be in last column of training data array
+    # now we generate array of predictions from our weak classifier
+    predictions = []
+    for rowIdx in range(trainData.shape[0]):
+        curData = trainData[rowIdx, 0:trainData.shape[1]-2] # grab current row of data without label
+        output = classifier.forward(curData) # pass through classifier
+        predictions.append(output)
+    # generate vector of comparisons for labels and predictions
+    compar = (predictions == labels)
+    e_t = (1/2) - (1/2)*np.sum(weights*compar) # calculate weighted error
+    return e_t, compar
 
 
-# function to perform Adaboost algorithm
-def adaBoost(trainData, numIter, modelType):
-    pass
+
+
+# function to perform Adaboost algorithm on training data for decision trees
+def adaBoostTrees(trainData, attributes, attVals, numIter):
+    D_i = np.ones(trainData.shape[0])/trainData.shape[0] # initialize weights, D
+    # initialize list of alpha values
+    alphaVals = []
+    # initialize list to store weak learners
+    stumpList = []
+    for itIdx in range(numIter): # iterate number of times selected by user
+        # create weak learner
+        newStump = stump(trainData, attributes, attVals, list(range(len(attributes))), D_i, gainFunction=WeightInfoGain)
+        stumpList.append(newStump)
+        # compute vote of weak classifier
+        # compare is y_i * h_t(x_i)
+        e_t, compare = computeWeightError(newStump, D_i, trainData)
+        curAlpha = (1/2)*np.log((1-e_t)/e_t)
+        alphaVals.append(alphaVals)
+        # update weights
+        D_i = D_i*np.log(-1*curAlpha*compare)
+        Z_t = np.sum(D_i) # calculate normalization constant
+        D_i = D_i/Z_t # apply normalization constant to weights  
+
+        print(np.sum(D_i))
+
+    # return list of trees and alpha values
+    return stumpList, alphaVals
+
+
 
 
 # make sure this is the main file being called, otherwise we just want to use the functions, not run this part
@@ -113,9 +152,8 @@ if __name__ == "__main__":
      # now convert numeric attributes to binary
     trainData = DT.convertNumData(trainData, BankAtts)
 
-    weights = np.ones(trainData.shape[0])/trainData.shape[0]
-
-    testTree = stump(trainData, BankAtts, BankAttVals, list(range(len(BankAtts))), weights) 
+    # test adaboost
+    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 1)
 
     ben = 1
 

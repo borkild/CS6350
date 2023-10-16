@@ -215,7 +215,7 @@ def testTree(tree, testData):
     # we will iterate through the test data, passing it through the tree and checking the answer
     dataShape = testData.shape
     correctCount = 0
-    for rowIdx in range(dataShape[0]-1): # iterate through the columns
+    for rowIdx in range(dataShape[0]-1): # iterate through the rows
         curData = testData[rowIdx,0:dataShape[1]-1] # get data without labels
         treeOut = tree.forward(curData) # pass current row through tree
         if treeOut == testData[rowIdx, dataShape[1]-1]:
