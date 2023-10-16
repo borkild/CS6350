@@ -1,0 +1,9 @@
+# ignore csv files, as these are data
+*.csv
+
+# directories to ignore
+Data/
+DecisionTree/__pycache__/
+DecisionTree/data/
+FinalProject/data/
+

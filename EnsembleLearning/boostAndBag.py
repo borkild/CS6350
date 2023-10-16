@@ -26,11 +26,12 @@ def WeightInfoGain(data, weights):
 
         for attValIdx in range(len(att)): # iterate through specific values of a single attribute
             attVal_Loc = np.argwhere(data[:,attIdx] == att[attValIdx])
+            attWeights = weights[attVal_Loc]
             numAttVal[attValIdx] = attVal_Loc.size
             attLabel = np.empty((labels.size)) 
 
             for labelIdx in range(len(labels)): # iterate through labels for specific attribute value
-                attLabel[labelIdx] = np.sum(weights[data[attVal_Loc,dataShape[1]-1] == labels[labelIdx]])
+                attLabel[labelIdx] = np.sum(attWeights[data[attVal_Loc,dataShape[1]-1] == labels[labelIdx]])
             # calculate entropy for attribute subset
             zeroIdx = np.argwhere(attLabel == 0) # need to adjust for 0 entries to aviod -inf*0 = nan
             if np.any(zeroIdx):
@@ -89,9 +90,7 @@ def adaBoost(trainData, numIter, modelType):
 # make sure this is the main file being called, otherwise we just want to use the functions, not run this part
 if __name__ == "__main__": 
     # import bank data
-    trainData = DT.LoadData("C:/Users/bigso/Box/CS6350/HW2/bank/train.csv")
-    # now convert numeric attributes to binary
-
+    trainData = DT.LoadData("Data/bank/train.csv")
 
     # here the attributes are not as easy to grab from the file (and are not all present), so we maunually create them
     BankAtts = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 
@@ -109,4 +108,14 @@ if __name__ == "__main__":
 
     BankAttVals = [['False', 'True'], job, marital, education, default, ['False', 'True'], housing, loan, contact, ['False', 'True'], month, 
                 ['False', 'True'], ['False', 'True'], ['False', 'True'], ['False', 'True'], poutcome]
+    
+
+     # now convert numeric attributes to binary
+    trainData = DT.convertNumData(trainData, BankAtts)
+
+    weights = np.ones(trainData.shape[0])/trainData.shape[0]
+
+    testTree = stump(trainData, BankAtts, BankAttVals, list(range(len(BankAtts))), weights) 
+
+    ben = 1
 
