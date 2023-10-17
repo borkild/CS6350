@@ -22,13 +22,13 @@ def WeightInfoGain(data, weights):
 
     for attIdx in range(dataShape[1] - 1): # iterate through columns of data array -- going through Attributes
         att = np.unique(data[:,attIdx]) # get unique attribute values
-        numAttVal = np.empty(len(att)) # array to store number of each attribute value
+        AttFrac = np.empty(len(att)) # array to store fraction of each attribute value
         H_S_v = np.empty(len(att)) # array to store entropy of each attribute value, H(S_v)
 
         for attValIdx in range(len(att)): # iterate through specific values of a single attribute
             attVal_Loc = np.argwhere(data[:,attIdx] == att[attValIdx])
             attWeights = weights[attVal_Loc]
-            numAttVal[attValIdx] = attVal_Loc.size
+            AttFrac[attValIdx] = np.sum(attWeights) # sum weights to use for final info gain calc
             attLabel = np.empty((labels.size)) 
 
             for labelIdx in range(len(labels)): # iterate through labels for specific attribute value
@@ -41,7 +41,7 @@ def WeightInfoGain(data, weights):
             else: 
                 H_S_v[attValIdx] = np.sum(-1*(attLabel)*np.log2(attLabel))
         # now calculat information gain for each attribute
-        attGain[attIdx] = H_S - np.sum((numAttVal/len(data[:,attIdx]))*H_S_v)
+        attGain[attIdx] = H_S - np.sum(AttFrac*H_S_v)
     return attGain
 
 # function to generate a tree with depth of 2 based on weighted info gain of training data
@@ -121,6 +121,7 @@ def adaBoostTrees(trainData, attributes, attVals, numIter):
         D_i = D_i*np.exp(-1*curAlpha*compare)
         Z_t = np.sum(D_i) # calculate normalization constant
         D_i = D_i/Z_t # apply normalization constant to weights  
+        
 
     # return list of trees and alpha values
     return stumpList, alphaVals
@@ -187,19 +188,19 @@ if __name__ == "__main__":
     trainData = DT.convertNumData(trainData, BankAtts)
 
     # test adaboost
-    TennisPath = 'Data/TennisData.csv'
-    TennisData = DT.LoadData(TennisPath)
-    TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
-    TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
+    # TennisPath = 'Data/TennisData.csv'
+    # TennisData = DT.LoadData(TennisPath)
+    # TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
+    # TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
 
-    TennisData = TennisData[0:5, :]
+    # gains = DT.InfoGain(TennisData)
 
-    stumps, alphas = adaBoostTrees(TennisData, TennisAtts, TennisAttVal, 2)
+    # stumps, alphas = adaBoostTrees(TennisData, TennisAtts, TennisAttVal, 3)
 
-    predict, acc = adaboostForward(stumps, alphas, TennisData)
+    # predict, acc = adaboostForward(stumps, alphas, TennisData)
 
 
-    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 5)
+    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 1)
 
     predict, acc = adaboostForward(stumps, alphas, trainData)
 
