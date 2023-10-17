@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import matplotlib.pyplot as py
 
 # now import functions from custom decision tree implementation
 # we assume our function is called from the CS6350 folder, which should occur if we run from the run script
@@ -15,8 +16,8 @@ def WeightInfoGain(data, weights):
     labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
     num_label = np.empty((labels.size))
     for labelIdx in range(len(labels)): # find amount of each label
-        num_label[labelIdx] = np.sum(data[:,dataShape[1]-1] == labels[labelIdx])
-    H_S = np.sum(-1*(num_label/dataShape[0])*np.log2(num_label/dataShape[0])) # calculate overall entropy
+        num_label[labelIdx] = np.sum(weights[data[:,dataShape[1]-1] == labels[labelIdx]])
+    H_S = np.sum(-1*(num_label)*np.log2(num_label)) # calculate overall entropy
     attGain = np.empty(dataShape[1] - 1) # array to write entropy for each attribute to
 
     for attIdx in range(dataShape[1] - 1): # iterate through columns of data array -- going through Attributes
@@ -34,8 +35,8 @@ def WeightInfoGain(data, weights):
                 attLabel[labelIdx] = np.sum(attWeights[data[attVal_Loc,dataShape[1]-1] == labels[labelIdx]])
             # calculate entropy for attribute subset
             zeroIdx = np.argwhere(attLabel == 0) # need to adjust for 0 entries to aviod -inf*0 = nan
-            if np.any(zeroIdx):
-                attLabel[attLabel == 0] = numAttVal[attValIdx]
+            if np.size(zeroIdx) > 0:
+                attLabel[attLabel == 0] = 1
                 H_S_v[attValIdx] = np.sum(-1*(attLabel)*np.log2(attLabel))
             else: 
                 H_S_v[attValIdx] = np.sum(-1*(attLabel)*np.log2(attLabel))
@@ -91,6 +92,9 @@ def computeWeightError(classifier, weights, trainData):
         predictions.append(output)
     # generate vector of comparisons for labels and predictions
     compar = (predictions == labels)
+    compar = compar.astype(int)
+    compar[compar == 0] = -1
+    compar = compar.astype(float)
     e_t = (1/2) - (1/2)*np.sum(weights*compar) # calculate weighted error
     return e_t, compar
 
@@ -112,18 +116,48 @@ def adaBoostTrees(trainData, attributes, attVals, numIter):
         # compare is y_i * h_t(x_i)
         e_t, compare = computeWeightError(newStump, D_i, trainData)
         curAlpha = (1/2)*np.log((1-e_t)/e_t)
-        alphaVals.append(alphaVals)
+        alphaVals.append(curAlpha)
         # update weights
-        D_i = D_i*np.log(-1*curAlpha*compare)
+        D_i = D_i*np.exp(-1*curAlpha*compare)
         Z_t = np.sum(D_i) # calculate normalization constant
         D_i = D_i/Z_t # apply normalization constant to weights  
-
-        print(np.sum(D_i))
 
     # return list of trees and alpha values
     return stumpList, alphaVals
 
 
+# forward pass through adaboost model
+def adaboostForward(models, alphas, testData):
+    # find labels from data and cast to -1 or 1 --> note that there can only be 2 output labels for this to work
+    testLabels = testData[:,testData.shape[1]-1]
+    labels = np.unique(testData[:,testData.shape[1]-1]) 
+    if np.size(labels) > 2:
+        raise Exception("More than 2 unique labels, choose a more appropriate algorithm")
+    # iterate through models and perform forward pass on data
+    predictions = []
+    for rowIdx in range(testData.shape[0]):
+        curData = testData[rowIdx,0:testData.shape[1]-2] # get current row of data
+        h_t = np.empty(len(models))
+        # run forward pass through each model
+        for modelIdx in range(len(models)):
+            output = models[modelIdx].forward(curData) # output of single model 
+            # create list of outputs from each model
+            if output == labels[0]:
+                h_t[modelIdx] = -1
+            elif output == labels[1]:
+                h_t[modelIdx] = 1
+        H_final = np.sum(np.asarray(alphas)*h_t)
+        # now apply sgn function using if statement
+        if H_final < 0:
+            predictions.append(labels[0]) 
+        else:
+            predictions.append(labels[1])
+
+    accuracy = (np.sum(predictions == testLabels)/testLabels.size)*100
+    return predictions, accuracy
+
+
+    
 
 
 # make sure this is the main file being called, otherwise we just want to use the functions, not run this part
@@ -153,7 +187,23 @@ if __name__ == "__main__":
     trainData = DT.convertNumData(trainData, BankAtts)
 
     # test adaboost
-    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 1)
+    TennisPath = 'Data/TennisData.csv'
+    TennisData = DT.LoadData(TennisPath)
+    TennisAtts = ['Outlook', 'Temperature', 'Humidity', 'Wind']
+    TennisAttVal = [['S', 'O', 'R'], ['H', 'M', 'C'], ['H', 'N', 'L'], ['S', 'W']]
+
+    TennisData = TennisData[0:5, :]
+
+    stumps, alphas = adaBoostTrees(TennisData, TennisAtts, TennisAttVal, 2)
+
+    predict, acc = adaboostForward(stumps, alphas, TennisData)
+
+
+    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 5)
+
+    predict, acc = adaboostForward(stumps, alphas, trainData)
+
+    print(acc)
 
     ben = 1
 
