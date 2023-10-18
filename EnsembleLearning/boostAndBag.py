@@ -14,10 +14,11 @@ def WeightInfoGain(data, weights):
     dataShape = data.shape
     # start by calculating overall entropy
     labels = np.unique(data[:,dataShape[1]-1]) # find unique labels
-    num_label = np.empty((labels.size))
-    for labelIdx in range(len(labels)): # find amount of each label
-        num_label[labelIdx] = np.sum(weights[data[:,dataShape[1]-1] == labels[labelIdx]])
-    H_S = np.sum(-1*(num_label)*np.log2(num_label)) # calculate overall entropy
+    frac_label = np.empty((labels.size))
+    for labelIdx in range(len(labels)): # iterate through each output label in dataset
+        weightLocs = np.argwhere(data[:,dataShape[1]-1] == labels[labelIdx]) # get locations of specific labels
+        frac_label[labelIdx] = np.sum(weights[weightLocs]) # sum weights of that label
+    H_S = np.sum(-1*(frac_label)*np.log2(frac_label)) # calculate overall entropy
     attGain = np.empty(dataShape[1] - 1) # array to write entropy for each attribute to
 
     for attIdx in range(dataShape[1] - 1): # iterate through columns of data array -- going through Attributes
@@ -29,17 +30,18 @@ def WeightInfoGain(data, weights):
             attVal_Loc = np.argwhere(data[:,attIdx] == att[attValIdx])
             attWeights = weights[attVal_Loc]
             AttFrac[attValIdx] = np.sum(attWeights) # sum weights to use for final info gain calc
-            attLabel = np.empty((labels.size)) 
+            attLabel = np.ones((labels.size)) 
 
             for labelIdx in range(len(labels)): # iterate through labels for specific attribute value
-                attLabel[labelIdx] = np.sum(attWeights[data[attVal_Loc,dataShape[1]-1] == labels[labelIdx]])
+                labAttLoc = np.argwhere(data[attVal_Loc,dataShape[1]-1] == labels[labelIdx])
+                attLabel[labelIdx] = np.sum(attWeights[labAttLoc[:,0]])
             # calculate entropy for attribute subset
             zeroIdx = np.argwhere(attLabel == 0) # need to adjust for 0 entries to aviod -inf*0 = nan
             if np.size(zeroIdx) > 0:
                 attLabel[attLabel == 0] = 1
-                H_S_v[attValIdx] = np.sum(-1*(attLabel)*np.log2(attLabel))
+                H_S_v[attValIdx] = np.sum(-1*(attLabel/AttFrac[attValIdx])*np.log2(attLabel/AttFrac[attValIdx]))
             else: 
-                H_S_v[attValIdx] = np.sum(-1*(attLabel)*np.log2(attLabel))
+                H_S_v[attValIdx] = np.sum(-1*(attLabel/AttFrac[attValIdx])*np.log2(attLabel/AttFrac[attValIdx]))
         # now calculat information gain for each attribute
         attGain[attIdx] = H_S - np.sum(AttFrac*H_S_v)
     return attGain
