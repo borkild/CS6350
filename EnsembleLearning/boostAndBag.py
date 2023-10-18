@@ -66,18 +66,21 @@ def stump(data, Attributes, AttributeVals, AttIdx, weights, gainFunction=WeightI
         # find most common label for attribute output
         for attIdx in range(len(AttributeVals[att])):
             valIdx = np.argwhere(data[:,att] == AttributeVals[att][attIdx]) # return row indices 
+            attWeights = weights[valIdx]
             # if row vector is empty, then we need to assign the value the most common label of whole dataset
             if valIdx.size == 0:
                 posslabels = np.unique(labels)
                 labCount = np.empty(posslabels.size)
                 for labIdx in range(len(posslabels)):
-                    labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
+                    weightIdxs = np.argwhere(labels[valIdx] == posslabels[labIdx])
+                    labCount[labIdx] = np.sum(attWeights[weightIdxs[:,0]])
                 subTrees.append(DT.tree(posslabels[np.argmax(labCount)])) # create leafnode with most common output of dataset
             else: # we find most common output to assign as leaf node
                 posslabels = np.unique(labels)
                 labCount = np.empty(posslabels.size)
                 for labIdx in range(len(posslabels)):
-                    labCount[labIdx] = np.count_nonzero(labels[valIdx] == posslabels[labIdx])
+                    weightIdxs = np.argwhere(labels[valIdx] == posslabels[labIdx])
+                    labCount[labIdx] = np.sum(attWeights[weightIdxs[:,0]])
                 subTrees.append(DT.tree(posslabels[np.argmax(labCount)])) # add to list of leafnodes
         # Create and return tree with depth of 2
         return DT.tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
@@ -87,11 +90,11 @@ def stump(data, Attributes, AttributeVals, AttIdx, weights, gainFunction=WeightI
 def computeWeightError(classifier, weights, trainData):
     labels = trainData[:,trainData.shape[1]-1] # labels should be in last column of training data array
     # now we generate array of predictions from our weak classifier
-    predictions = []
+    predictions = np.empty(trainData.shape[0],dtype=np.dtype('U100')) # create numpy array to store predictions
     for rowIdx in range(trainData.shape[0]):
-        curData = trainData[rowIdx, 0:trainData.shape[1]-2] # grab current row of data without label
+        curData = trainData[rowIdx, 0:trainData.shape[1]-1] # grab current row of data without label
         output = classifier.forward(curData) # pass through classifier
-        predictions.append(output)
+        predictions[rowIdx] = output
     # generate vector of comparisons for labels and predictions
     compar = (predictions == labels)
     compar = compar.astype(int)
@@ -139,7 +142,7 @@ def adaboostForward(models, alphas, testData):
     # iterate through models and perform forward pass on data
     predictions = []
     for rowIdx in range(testData.shape[0]):
-        curData = testData[rowIdx,0:testData.shape[1]-2] # get current row of data
+        curData = testData[rowIdx,0:testData.shape[1]-1] # get current row of data
         h_t = np.empty(len(models))
         # run forward pass through each model
         for modelIdx in range(len(models)):
@@ -202,7 +205,7 @@ if __name__ == "__main__":
     # predict, acc = adaboostForward(stumps, alphas, TennisData)
 
 
-    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 1)
+    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 10)
 
     predict, acc = adaboostForward(stumps, alphas, trainData)
 
