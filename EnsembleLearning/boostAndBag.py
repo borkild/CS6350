@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import sys
-import matplotlib.pyplot as py
+import matplotlib.pyplot as plt
 
 # now import functions from custom decision tree implementation
 # we assume our function is called from the CS6350 folder, which should occur if we run from the run script
@@ -143,23 +143,23 @@ def adaboostForward(models, alphas, testData):
     predictions = []
     for rowIdx in range(testData.shape[0]):
         curData = testData[rowIdx,0:testData.shape[1]-1] # get current row of data
-        h_t = np.empty(len(models))
         # run forward pass through each model
-        for modelIdx in range(len(models)):
-            output = models[modelIdx].forward(curData) # output of single model 
-            # create list of outputs from each model
-            if output == labels[0]:
-                h_t[modelIdx] = -1
-            elif output == labels[1]:
-                h_t[modelIdx] = 1
+        output = [mod.forward(curData) for mod in models]
+        output = np.asarray(output)
+        # convert output labels to -1 or 1
+        h_t = (output == labels[0]) 
+        h_t = h_t.astype(int)
+        h_t[h_t == 0] = -1
+        h_t = h_t.astype(float)
+        # calculate final output
         H_final = np.sum(np.asarray(alphas)*h_t)
         # now apply sgn function using if statement
         if H_final < 0:
-            predictions.append(labels[0]) 
+            predictions.append(labels[1]) 
         else:
-            predictions.append(labels[1])
+            predictions.append(labels[0])
 
-    accuracy = (np.sum(predictions == testLabels)/testLabels.size)*100
+    accuracy = (np.sum(predictions == testLabels)/testLabels.size)
     return predictions, accuracy
 
 
@@ -170,6 +170,7 @@ def adaboostForward(models, alphas, testData):
 if __name__ == "__main__": 
     # import bank data
     trainData = DT.LoadData("Data/bank/train.csv")
+    testData = DT.LoadData("Data/bank/test.csv")
 
     # here the attributes are not as easy to grab from the file (and are not all present), so we maunually create them
     BankAtts = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 
@@ -191,6 +192,7 @@ if __name__ == "__main__":
 
      # now convert numeric attributes to binary
     trainData = DT.convertNumData(trainData, BankAtts)
+    testData = DT.convertNumData(testData, BankAtts)
 
     # test adaboost
     # TennisPath = 'Data/TennisData.csv'
@@ -205,11 +207,51 @@ if __name__ == "__main__":
     # predict, acc = adaboostForward(stumps, alphas, TennisData)
 
 
-    stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 10)
+    # Problem 2A
+    P2A = True
+    if P2A:
+        # go through 500 iterations of Adaboost
+        stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 500)
 
-    predict, acc = adaboostForward(stumps, alphas, trainData)
+        stumpTrainEr = []
+        stumpTestEr = []
+        # iterate through stumps, calculating each stump's error
+        for stpIdx in range(len(stumps)):
+            curStump = stumps[stpIdx]
+            stumpTrainAcc = DT.testTree(curStump, trainData)
+            stumpTrainEr.append((100 - stumpTrainAcc)/100)
 
-    print(acc)
+            stumpTestAcc = DT.testTree(curStump, testData)
+            stumpTestEr.append((100 - stumpTestAcc)/100)
 
-    ben = 1
+        stumpNums = list(range(1, 501))
+
+        plt.scatter(stumpNums, stumpTrainEr,label='Train Error')
+        plt.scatter(stumpNums, stumpTestEr, label='Test Error')
+        plt.xlabel("Stump Index")
+        plt.ylabel("Stump Error")
+        plt.legend()
+        plt.savefig("Figures/StumpAcc.png")
+        plt.close()
+
+        trainAcc = []
+        testAcc = []
+        for T in range(1,300): # iterate through, grabbing a different number of stumps each time to get accuracy
+            print(T)
+            # get accuracy on training data
+            trainPredict, curTrainAcc = adaboostForward(stumps[0:T], alphas[0:T], trainData)
+            trainAcc.append(1-curTrainAcc)
+            print("Training Accuracy: ")
+            print(curTrainAcc)
+            # get accuracy on testing data --> 1 - accuracy to get error
+            testPredict, curTestAcc = adaboostForward(stumps[0:T], alphas[0:T], testData)
+            testAcc.append(curTestAcc)
+            print("TestAccuracy: ")
+            print(1-curTestAcc)
+
+        numT = list(range(1,501))
+        plt.plot(numT, trainAcc)
+        plt.savefig("Figures/AdaboostAcc.png")
+
+
 
