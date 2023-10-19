@@ -368,7 +368,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2B = True
+    P2B = False
     if P2B:
         # generate 500 bagged trees
         bags = baggedTrees(500, 15, trainData, BankAtts, BankAttVals)
@@ -408,12 +408,23 @@ if __name__ == "__main__":
 
     P2C = True
     if P2C:
-        for k in range(500):
+        bag100Trees = []
+        for k in range(100):
             # randomly sample training dataset, 1000 samples
             sampIdx = rand.sample(list(range(trainData.shape[0])), 1000) 
             sampData = trainData[sampIdx, :]
             # train 500 trees on those samples
-            bagTrees = baggedTrees(500, 5, sampData, BankAtts, BankAttVals)
+            bagTrees = baggedTrees(500, 5, sampData, BankAtts, BankAttVals) 
+            bag100Trees.append(bagTrees) 
+
+        # take 100 bags and compute predictions
+        allPredict = []
+        for bagIdx in range(100):
+            acc, predictions = DT.testTree(bag100Trees[bagIdx][0], testData)
+            allPredict.append(predictions)
+
+
+
 
 
 

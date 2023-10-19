@@ -278,9 +278,12 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
     if labCheck == labels.size:
         return tree(labels[0]) # returns leaf node, which is a tree structure with only a name
     else:
-        gains = gainFunction(data) # calculate information gain using selected function
-        # get attribute with maximum information gain
-        att = np.argmax(gains)
+        if data.shape[1] == 1:
+            att = AttIdx[0] 
+        else:
+            gains = gainFunction(data) # calculate information gain using selected function
+            # get attribute with maximum information gain
+            att = np.argmax(gains)
         trueAttIdx = AttIdx[att]
         # split up data based on attribute
         subTrees = []
@@ -318,25 +321,17 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
                     del newAttributeVals[att] 
                     del newAttIdx[att]
 
-                # check to make sure tree isn't bigger than max depth -- use counter
-                if (max_depth != 0) & (count == max_depth): 
-                    # if tree is at the max_depth, then we need to return leaf node for the attribute values
-                    posslabels = np.unique(labels)
-                    labCount = np.empty(posslabels.size)
-                    for labIdx in range(len(posslabels)):
-                        labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
-                    subTrees.append(tree(posslabels[np.argmax(labCount)])) # create leafnode of most common label
-                else:
-                    newAttributes = Attributes.copy()
-                    newAttributeVals = AttributeVals.copy()
-                    newAttIdx = AttIdx.copy()
-                    trueAttIdx = newAttIdx[att]
-                    # delete attribute we just used from lists
-                    del newAttributes[att]
-                    del newAttributeVals[att] 
-                    del newAttIdx[att]
-                    # repeat ID3
-                    subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction, count))
+                    # check to make sure tree isn't bigger than max depth -- use counter
+                    if (max_depth != 0) & (count == max_depth): 
+                        # if tree is at the max_depth, then we need to return leaf node for the attribute values
+                        posslabels = np.unique(labels)
+                        labCount = np.empty(posslabels.size)
+                        for labIdx in range(len(posslabels)):
+                            labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
+                        subTrees.append(tree(posslabels[np.argmax(labCount)])) # create leafnode of most common label
+                    else:
+                        # repeat ID3
+                        subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction, count))
         # Create and return tree
         return tree(Attributes[att], trueAttIdx, subTrees, AttributeVals[att])
         
