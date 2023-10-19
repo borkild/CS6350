@@ -84,7 +84,7 @@ def InfoGain(data):
                 attLabel[labelIdx] = np.sum(data[attVal_Loc,dataShape[1]-1] == labels[labelIdx])
             # calculate entropy for attribute subset
             zeroIdx = np.argwhere(attLabel == 0) # need to adjust for 0 entries to aviod -inf*0 = nan
-            if np.any(zeroIdx):
+            if np.size(zeroIdx) > 0:
                 attLabel[attLabel == 0] = numAttVal[attValIdx]
                 H_S_v[attValIdx] = np.sum(-1*(attLabel/numAttVal[attValIdx])*np.log2(attLabel/numAttVal[attValIdx]))
             else: 
@@ -215,14 +215,16 @@ def testTree(tree, testData):
     # we will iterate through the test data, passing it through the tree and checking the answer
     dataShape = testData.shape
     correctCount = 0
-    for rowIdx in range(dataShape[0]-1): # iterate through the rows
+    prediction = []
+    for rowIdx in range(dataShape[0]): # iterate through the rows
         curData = testData[rowIdx,0:dataShape[1]-1] # get data without labels
         treeOut = tree.forward(curData) # pass current row through tree
+        prediction.append(treeOut)
         if treeOut == testData[rowIdx, dataShape[1]-1]:
             correctCount += 1 # if labels match, add 1 to count
     # calculate percent correct
     acc = (correctCount/dataShape[0])*100
-    return acc
+    return acc, prediction
 
 # function to convert numerical variables to binary
 def convertNumData(data, attributes):
@@ -325,6 +327,14 @@ def ID3(data, Attributes, AttributeVals, AttIdx, max_depth=0, gainFunction=InfoG
                         labCount[labIdx] = np.count_nonzero(labels == posslabels[labIdx])
                     subTrees.append(tree(posslabels[np.argmax(labCount)])) # create leafnode of most common label
                 else:
+                    newAttributes = Attributes.copy()
+                    newAttributeVals = AttributeVals.copy()
+                    newAttIdx = AttIdx.copy()
+                    trueAttIdx = newAttIdx[att]
+                    # delete attribute we just used from lists
+                    del newAttributes[att]
+                    del newAttributeVals[att] 
+                    del newAttIdx[att]
                     # repeat ID3
                     subTrees.append(ID3(subData, newAttributes, newAttributeVals, newAttIdx, max_depth, gainFunction, count))
         # Create and return tree

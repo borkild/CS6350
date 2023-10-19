@@ -2,6 +2,7 @@ import numpy as np
 import os
 import sys
 import matplotlib.pyplot as plt
+import random as rand
 
 # now import functions from custom decision tree implementation
 # we assume our function is called from the CS6350 folder, which should occur if we run from the run script
@@ -163,7 +164,109 @@ def adaboostForward(models, alphas, testData):
     return predictions, accuracy
 
 
+# forward pass through adaboost model with precomputed outputs, this offers significant speedup
+def adaboostForwardPreComp(alphas, testData, modelOutputs, numModels=0):
+    # model outputs should be a list of lists containing the outputs for the model
+    # numModels tells the number of models to use when computing the final hypothsis, if 0 all models given will be used
+    if numModels == 0:
+        labels = testData[:,testData.shape[1]-1]
+        Ulabels = np.unique(testData[:,testData.shape[1]-1])
+        if np.size(Ulabels) > 2:
+            raise Exception("More than 2 unique labels, choose a more appropriate algorithm")
+        # convert model outputs to numpy array
+        modOut = np.asarray(modelOutputs)
+        predictions = []
+        # iterate through data, calculating outputs from ensemble
+        for labIdx in range(labels.size):
+            # find where model outputs match which label
+            h_t = (modOut[:, labIdx] == Ulabels[0])
+            h_t[h_t == 0] = -1
+            h_t = h_t.astype(float)
+            # calculate final output
+            H_final = np.sum(np.asarray(alphas)*h_t)
+            # now apply sgn function using if statement
+            if H_final < 0:
+                predictions.append(labels[1]) 
+            else:
+                predictions.append(labels[0])
+
+        accuracy = (np.sum(predictions == labels)/labels.size)
+        return predictions, accuracy
+    else:
+        labels = testData[:,testData.shape[1]-1]
+        Ulabels = np.unique(testData[:,testData.shape[1]-1])
+        if np.size(Ulabels) > 2:
+            raise Exception("More than 2 unique labels, choose a more appropriate algorithm")
+        # convert model outputs to numpy array
+        modOut = np.asarray(modelOutputs)
+        predictions = []
+        # iterate through data, calculating outputs from ensemble
+        for labIdx in range(labels.size):
+            # find where model outputs match which label
+            h_t = (modOut[0:numModels, labIdx] == Ulabels[0])
+            h_t[h_t == 0] = -1
+            h_t = h_t.astype(float)
+            # calculate final output
+            H_final = np.sum(np.asarray(alphas[0:numModels])*h_t)
+            # now apply sgn function using if statement
+            if H_final < 0:
+                predictions.append(labels[1]) 
+            else:
+                predictions.append(labels[0])
+
+        accuracy = (np.sum(predictions == labels)/labels.size)
+        return predictions, accuracy
+
+
+
+def baggedTrees(numTrees, mSamples, trainData, Attributes, AttributeVals):
+    treeList = [] 
+    for treeIdx in range(numTrees):
+        sampleIdxs = []
+        for k in range(mSamples):
+            # draw mSamples uniformly with replacement
+            sampleIdxs.append(rand.randint(0, trainData.shape[0]-1))
+
+        # grab sample data from overall set of training data
+        sampleData = trainData[sampleIdxs,:]
+        # create new tree from sample data using ID3 algorithm
+        newTree = DT.ID3(sampleData, Attributes, AttributeVals, list(range(len(Attributes)))) 
+        treeList.append(newTree)
+
+    return treeList
+
     
+def bagForwardPreComp(modelOutput, Data, numModels=0):
+    labels = Data[:, Data.shape[1]-1]
+    Ulabels = np.unique(labels)
+    modOut = np.asarray(modelOutput) # make list of lists into numpy array
+    if numModels == 0:
+        labels = Data[:, Data.shape[1]-1]
+        Ulabels = np.unique(labels)
+        # iterate through unique labels, finding how many are in model outputs
+        labCount = np.zeros((Ulabels.size, labels.size))
+        for uIdx in range(Ulabels.size):
+            modMatch = (modOut == Ulabels[uIdx])
+            labCount[uIdx, :] = np.sum(modMatch, axis=0)
+        labIdx = np.argmax(labCount, axis=0)
+        predictions = Ulabels[labIdx]
+        acc = np.sum(predictions == labels)/labels.size
+        return acc, predictions
+    else:
+        labels = Data[:, Data.shape[1]-1]
+        Ulabels = np.unique(labels)
+        # iterate through unique labels, finding how many are in model outputs
+        labCount = np.zeros((Ulabels.size, labels.size))
+        for uIdx in range(Ulabels.size):
+            modMatch = (modOut[0:numModels, :] == Ulabels[uIdx])
+            labCount[uIdx, :] = np.sum(modMatch, axis=0)
+        labIdx = np.argmax(labCount, axis=0)
+        predictions = Ulabels[labIdx]
+        acc = np.sum(predictions == labels)/labels.size
+        return acc, predictions
+
+
+
 
 
 # make sure this is the main file being called, otherwise we just want to use the functions, not run this part
@@ -208,21 +311,27 @@ if __name__ == "__main__":
 
 
     # Problem 2A
-    P2A = True
+    P2A = False
     if P2A:
         # go through 500 iterations of Adaboost
         stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 500)
 
         stumpTrainEr = []
+        trainOutputs = []
+
         stumpTestEr = []
-        # iterate through stumps, calculating each stump's error
+        testOutputs = []
+
+        # iterate through stumps, calculating each stump's error and outputs
         for stpIdx in range(len(stumps)):
             curStump = stumps[stpIdx]
-            stumpTrainAcc = DT.testTree(curStump, trainData)
+            stumpTrainAcc, stumpTrainOut = DT.testTree(curStump, trainData)
             stumpTrainEr.append((100 - stumpTrainAcc)/100)
+            trainOutputs.append(stumpTrainOut)
 
-            stumpTestAcc = DT.testTree(curStump, testData)
+            stumpTestAcc, stumpTestOut = DT.testTree(curStump, testData)
             stumpTestEr.append((100 - stumpTestAcc)/100)
+            testOutputs.append(stumpTestOut)
 
         stumpNums = list(range(1, 501))
 
@@ -236,22 +345,77 @@ if __name__ == "__main__":
 
         trainAcc = []
         testAcc = []
-        for T in range(1,300): # iterate through, grabbing a different number of stumps each time to get accuracy
+        for T in range(1,501): # iterate through, grabbing a different number of stumps each time to get accuracy
             print(T)
-            # get accuracy on training data
-            trainPredict, curTrainAcc = adaboostForward(stumps[0:T], alphas[0:T], trainData)
+            # get accuracy on training data -- use precomputed outputs from stumps for final prediction calculation
+            trainPredict, curTrainAcc = adaboostForwardPreComp(alphas, trainData, trainOutputs, numModels=T)
             trainAcc.append(1-curTrainAcc)
-            print("Training Accuracy: ")
-            print(curTrainAcc)
+            print("Training Error: ")
+            print(1-curTrainAcc)
             # get accuracy on testing data --> 1 - accuracy to get error
-            testPredict, curTestAcc = adaboostForward(stumps[0:T], alphas[0:T], testData)
-            testAcc.append(curTestAcc)
-            print("TestAccuracy: ")
+            testPredict, curTestAcc = adaboostForwardPreComp(alphas, testData, testOutputs, numModels=T)
+            testAcc.append(1-curTestAcc)
+            print("Test Error: ")
             print(1-curTestAcc)
 
         numT = list(range(1,501))
-        plt.plot(numT, trainAcc)
+        plt.plot(numT, trainAcc, label='Train Error')
+        plt.plot(numT, testAcc, label='Test Error')
+        plt.xlabel("Iteration")
+        plt.ylabel("Error")
+        plt.legend()
         plt.savefig("Figures/AdaboostAcc.png")
+        plt.close
+
+
+    P2B = True
+    if P2B:
+        # generate 500 bagged trees
+        bags = baggedTrees(500, 15, trainData, BankAtts, BankAttVals)
+        # precompute output for each bagged tree
+        trainOutput = []
+        testOutput = []
+        for bagIdx in range(len(bags)):
+            # training data
+            acc, bagTrainOutput = DT.testTree(bags[bagIdx], trainData)
+            trainOutput.append(bagTrainOutput)
+            # testing data
+            acc, bagTestOutput = DT.testTree(bags[bagIdx], testData)
+            testOutput.append(bagTestOutput)
+
+
+        trainError = []
+        testError = []
+        for T in range(1,501):
+            print(T)
+            # now we hand precomputed outputs to function to calculate final hypothesis by majority vote
+            trainAcc, predictions = bagForwardPreComp(trainOutput, trainData, T)
+            trainError.append(1 - trainAcc)
+
+            testAcc, predictions = bagForwardPreComp(testOutput, testData, T)
+            testError.append(1 - testAcc)
+
+        
+        numIt = list(range(1,501))
+        plt.plot(numIt, trainError, label='Train Error')
+        plt.plot(numIt, testError, label='Test Error')
+        plt.xlabel("Iteration")
+        plt.ylabel("Error")
+        plt.legend()
+        plt.savefig("Figures/BagAcc.png")
+        plt.close
+
+
+    P2C = True
+    if P2C:
+        for k in range(500):
+            # randomly sample training dataset, 1000 samples
+            sampIdx = rand.sample(list(range(trainData.shape[0])), 1000) 
+            sampData = trainData[sampIdx, :]
+            # train 500 trees on those samples
+            bagTrees = baggedTrees(500, 5, sampData, BankAtts, BankAttVals)
+
+
 
 
 
