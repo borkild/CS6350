@@ -382,6 +382,7 @@ if __name__ == "__main__":
             print(1-curTestAcc)
 
         numT = list(range(1,501))
+        plt.figure()
         plt.plot(numT, trainAcc, label='Train Error')
         plt.plot(numT, testAcc, label='Test Error')
         plt.xlabel("Iteration")
@@ -421,6 +422,7 @@ if __name__ == "__main__":
 
         
         numIt = list(range(1,501))
+        plt.figure()
         plt.plot(numIt, trainError, label='Train Error')
         plt.plot(numIt, testError, label='Test Error')
         plt.xlabel("Iteration")
@@ -581,6 +583,7 @@ if __name__ == "__main__":
 
 
         RFlist = list(range(1,501))
+        plt.figure()
         plt.plot(RFlist, trainErrorRF2, label='Train Error, 2 Features')
         plt.plot(RFlist, testErrorRF2, label='Test Error, 2 Features')
         plt.plot(RFlist, trainErrorRF4, label='Train Error, 4 Features')
