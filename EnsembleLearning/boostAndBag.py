@@ -333,8 +333,9 @@ if __name__ == "__main__":
 
 
     # Problem 2A
-    P2A = False
+    P2A = True
     if P2A:
+        print('Running Problem 2A')
         # go through 500 iterations of Adaboost
         stumps, alphas = adaBoostTrees(trainData, BankAtts, BankAttVals, 500)
 
@@ -390,8 +391,9 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2B = False
+    P2B = True
     if P2B:
+        print('Running Problem 2B')
         # generate 500 bagged trees
         bags = baggedTrees(500, 15, trainData, BankAtts, BankAttVals)
         # precompute output for each bagged tree
@@ -428,8 +430,9 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2C = False
+    P2C = True
     if P2C:
+        print('Running Problem 2C')
         bag100Trees = []
         for k in range(100):
             # randomly sample training dataset, 1000 samples, without replacement
@@ -509,12 +512,12 @@ if __name__ == "__main__":
         sampBagVar = np.sqrt(sampSTD) 
         print("The variance for the bagged trees is:")
         print(sampBagVar)
-        ben = 1
 
         
 
-    P2D = False
+    P2D = True
     if P2D:
+        print('Running Problem 2D')
         # run random forest to generate 500 trees for 2, 4, and 6 features
         RFbags2 = RandomForestTrees(500, 15, 2, trainData, BankAtts, BankAttVals)
         RFbags4 = RandomForestTrees(500, 15, 4, trainData, BankAtts, BankAttVals)
@@ -593,7 +596,85 @@ if __name__ == "__main__":
 
     P2E = True
     if P2E:
-        pass
+        print('Running Problem 2E')
+        bag100Trees = []
+        for k in range(100):
+            # randomly sample training dataset, 1000 samples, without replacement
+            sampIdx = rand.sample(list(range(trainData.shape[0])), 1000) 
+            sampData = trainData[sampIdx, :]
+            # train 500 trees on those samples
+            bagTrees = RandomForestTrees(500, 5, 4, sampData, BankAtts, BankAttVals) 
+            bag100Trees.append(bagTrees) 
+
+        # take 100 bags and compute predictions
+        allPredict = []
+        for bagIdx in range(100):
+            acc, predictions = DT.testTree(bag100Trees[bagIdx][0], testData)
+            allPredict.append(predictions)
+        
+        # make predictions into numpy array
+        allPredict = np.array(allPredict)
+        # now we convert predictions to numerical values
+        numPred = (allPredict == 'no')
+        numPred = numPred.astype(int)
+        numPred[numPred == 0] = -1
+        numPred = numPred.astype(float)
+
+        testLabels = testData[:, testData.shape[1]-1]
+        testVals = (testLabels == 'no')
+        testVals = testVals.astype(int)
+        testVals[testVals == 0] = -1
+        testVals = testVals.astype(float)
+
+        # find average of predictions
+        avPred = np.sum(numPred, axis=0)/numPred.shape[0]
+        # calculate bias
+        biaSingTree = np.power(testVals - avPred, 2)
+        biaSingleTree = np.sum(biaSingTree)/biaSingTree.size
+        print("The bias for the single trees is:")
+        print(biaSingleTree)
+        # compute sample variance of all predictions
+        mHat = np.sum(numPred)/numPred.size
+        sampSTD = np.sum(np.power(numPred - mHat, 2)) * (1/(numPred.size - 1))
+        sampVar = np.sqrt(sampSTD) 
+        print("The variance for a single tree is:")
+        print(sampVar)
+
+        # now repeat calculation for 100 bagged trees
+        TotalBagOutput = [] # final list to store all outputs
+        for baggIdx in range(100): # iterate through 100 bagged predictors
+            #initialize list to store output from 1 bag
+            baggOutput = []
+            for treeIdx in range(len(bag100Trees[0])): # iterate through the trees in each bag
+                # precompute outputs from 500 trees
+                testAcc, predictions = DT.testTree(bag100Trees[baggIdx][treeIdx], testData)
+                baggOutput.append(predictions)
+            # run forward pass using bagged data
+            testAcc, baggPred = bagForwardPreComp(baggOutput, testData)
+            # write bagged predictions to array
+            TotalBagOutput.append(baggPred)
+
+        # make predictions into numpy array
+        TotalBagOutput = np.array(TotalBagOutput)
+        # now we convert predictions to numerical values
+        numBagPred = (TotalBagOutput == 'no')
+        numBagPred = numBagPred.astype(int)
+        numBagPred[numBagPred == 0] = -1
+        numBagPred = numBagPred.astype(float)
+
+        # find average of predictions
+        avBagPred = np.sum(numBagPred, axis=0)/numPred.shape[0]
+        # calculate bias
+        biaBag = np.power(testVals - avBagPred, 2)
+        biaBagT = np.sum(biaBag)/biaBag.size
+        print("The bias for the bagged trees is:")
+        print(biaBagT)
+        # compute sample variance of all predictions
+        mHat = np.sum(numBagPred)/numBagPred.size
+        sampSTD = np.sum(np.power(numBagPred - mHat, 2)) * (1/(numBagPred.size - 1))
+        sampBagVar = np.sqrt(sampSTD) 
+        print("The variance for the bagged trees is:")
+        print(sampBagVar)
 
 
 
