@@ -410,7 +410,7 @@ if __name__ == "__main__":
     if P2C:
         bag100Trees = []
         for k in range(100):
-            # randomly sample training dataset, 1000 samples
+            # randomly sample training dataset, 1000 samples, without replacement
             sampIdx = rand.sample(list(range(trainData.shape[0])), 1000) 
             sampData = trainData[sampIdx, :]
             # train 500 trees on those samples
@@ -422,6 +422,36 @@ if __name__ == "__main__":
         for bagIdx in range(100):
             acc, predictions = DT.testTree(bag100Trees[bagIdx][0], testData)
             allPredict.append(predictions)
+        
+        # make predictions into numpy array
+        allPredict = np.array(allPredict)
+        # now we convert predictions to numerical values
+        numPred = (allPredict == 'no')
+        numPred = numPred.astype(int)
+        numPred[numPred == 0] = -1
+        numPred = numPred.astype(float)
+
+        testLabels = testData[:, testData.shape[1]-1]
+        testVals = (testLabels == 'no')
+        testVals = testVals.astype(int)
+        testVals[testVals == 0] = -1
+        testVals = testVals.astype(float)
+
+        # find average of predictions
+        avPred = np.sum(numPred, axis=0)/numPred.shape[0]
+        # calculate bias
+        biaSingTree = np.power(testVals - avPred, 2)
+        # compute sample variance of all predictions
+        mHat = np.sum(numPred)/numPred.size
+        sampSTD = np.sum(np.power(numPred - mHat, 2)) * (1/(numPred.size - 1))
+        sampVar = np.sqrt(sampSTD)
+
+        
+
+
+
+
+
 
 
 
