@@ -265,8 +265,30 @@ def bagForwardPreComp(modelOutput, Data, numModels=0):
         acc = np.sum(predictions == labels)/labels.size
         return acc, predictions
 
+# function to execute random forest for decision trees
+def RandomForestTrees(numTrees, mSamples, fAtts, trainData, Attributes, AttributeVals):
+    treeList = [] 
+    attIdx = list(range(trainData.shape[1]-1))
+    for treeIdx in range(numTrees):
+        sampleIdxs = []
+        for k in range(mSamples):
+            # draw mSamples uniformly with replacement
+            sampleIdxs.append(rand.randint(0, trainData.shape[0]-1)) 
+        # randomly select fAtts features for subsampled data
+        sampleFeat = rand.sample(attIdx, fAtts)
+        pullSampFeats = sampleFeat.copy() # copy index array because we need to add labels when pulling data
+        pullSampFeats.append(trainData.shape[1]-1) # add index of final column so we pull labels
+        # grab sample data from overall set of training data
+        sampleData = trainData[sampleIdxs,:]
+        subSampleData = sampleData[:, pullSampFeats]
+        # get attribute names 
+        subAttributes = [Attributes[idx] for idx in sampleFeat]
+        subAttributeVals = [AttributeVals[idx] for idx in sampleFeat]
+        # create new tree from sample data using ID3 algorithm
+        newTree = DT.ID3(subSampleData, subAttributes, subAttributeVals, sampleFeat) 
+        treeList.append(newTree)
 
-
+    return treeList
 
 
 # make sure this is the main file being called, otherwise we just want to use the functions, not run this part
@@ -406,7 +428,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2C = True
+    P2C = False
     if P2C:
         bag100Trees = []
         for k in range(100):
@@ -441,14 +463,137 @@ if __name__ == "__main__":
         avPred = np.sum(numPred, axis=0)/numPred.shape[0]
         # calculate bias
         biaSingTree = np.power(testVals - avPred, 2)
+        biaSingleTree = np.sum(biaSingTree)/biaSingTree.size
+        print("The bias for the single trees is:")
+        print(biaSingleTree)
         # compute sample variance of all predictions
         mHat = np.sum(numPred)/numPred.size
         sampSTD = np.sum(np.power(numPred - mHat, 2)) * (1/(numPred.size - 1))
-        sampVar = np.sqrt(sampSTD)
+        sampVar = np.sqrt(sampSTD) 
+        print("The variance for a single tree is:")
+        print(sampVar)
+
+        # now repeat calculation for 100 bagged trees
+        TotalBagOutput = [] # final list to store all outputs
+        for baggIdx in range(100): # iterate through 100 bagged predictors
+            print(baggIdx)
+            #initialize list to store output from 1 bag
+            baggOutput = []
+            for treeIdx in range(len(bag100Trees[0])): # iterate through the trees in each bag
+                # precompute outputs from 500 trees
+                testAcc, predictions = DT.testTree(bag100Trees[baggIdx][treeIdx], testData)
+                baggOutput.append(predictions)
+            # run forward pass using bagged data
+            testAcc, baggPred = bagForwardPreComp(baggOutput, testData)
+            # write bagged predictions to array
+            TotalBagOutput.append(baggPred)
+
+        # make predictions into numpy array
+        TotalBagOutput = np.array(TotalBagOutput)
+        # now we convert predictions to numerical values
+        numBagPred = (TotalBagOutput == 'no')
+        numBagPred = numBagPred.astype(int)
+        numBagPred[numBagPred == 0] = -1
+        numBagPred = numBagPred.astype(float)
+
+        # find average of predictions
+        avBagPred = np.sum(numBagPred, axis=0)/numPred.shape[0]
+        # calculate bias
+        biaBag = np.power(testVals - avBagPred, 2)
+        biaBagT = np.sum(biaBag)/biaBag.size
+        print("The bias for the bagged trees is:")
+        print(biaBagT)
+        # compute sample variance of all predictions
+        mHat = np.sum(numBagPred)/numBagPred.size
+        sampSTD = np.sum(np.power(numBagPred - mHat, 2)) * (1/(numBagPred.size - 1))
+        sampBagVar = np.sqrt(sampSTD) 
+        print("The variance for the bagged trees is:")
+        print(sampBagVar)
+        ben = 1
 
         
 
+    P2D = False
+    if P2D:
+        # run random forest to generate 500 trees for 2, 4, and 6 features
+        RFbags2 = RandomForestTrees(500, 15, 2, trainData, BankAtts, BankAttVals)
+        RFbags4 = RandomForestTrees(500, 15, 4, trainData, BankAtts, BankAttVals)
+        RFbags6 = RandomForestTrees(500, 15, 6, trainData, BankAtts, BankAttVals)
 
+        # precompute prediction of the trees
+        trainOutputRF2 = []
+        testOutputRF2 = []
+        trainOutputRF4 = []
+        testOutputRF4 = []
+        trainOutputRF6 = []
+        testOutputRF6 = []
+        for bagIdx in range(len(RFbags2)):
+            # training data w/ 2
+            acc, bagTrainOutput = DT.testTree(RFbags2[bagIdx], trainData)
+            trainOutputRF2.append(bagTrainOutput)
+            # testing data w/ 2
+            acc, bagTestOutput = DT.testTree(RFbags2[bagIdx], testData)
+            testOutputRF2.append(bagTestOutput)
+            # training data w/ 4
+            acc, bagTrainOutput = DT.testTree(RFbags4[bagIdx], trainData)
+            trainOutputRF4.append(bagTrainOutput)
+            # testing data w/ 4
+            acc, bagTestOutput = DT.testTree(RFbags4[bagIdx], testData)
+            testOutputRF4.append(bagTestOutput)
+            # training data w/ 6
+            acc, bagTrainOutput = DT.testTree(RFbags6[bagIdx], trainData)
+            trainOutputRF6.append(bagTrainOutput)
+            # testing data w/ 6
+            acc, bagTestOutput = DT.testTree(RFbags6[bagIdx], testData)
+            testOutputRF6.append(bagTestOutput)
+
+
+        # iterate through and test prediction with varying number of trees
+        trainErrorRF2 = []
+        testErrorRF2 = []
+        trainErrorRF4 = []
+        testErrorRF4 = []
+        trainErrorRF6 = []
+        testErrorRF6 = []
+        for T in range(1,501):
+            print(T)
+            # now we hand precomputed outputs to function to calculate final hypothesis by majority vote
+            trainAcc, predictions = bagForwardPreComp(trainOutputRF2, trainData, T)
+            trainErrorRF2.append(1 - trainAcc)
+
+            testAcc, predictions = bagForwardPreComp(testOutputRF2, testData, T)
+            testErrorRF2.append(1 - testAcc)
+            # now we hand precomputed outputs to function to calculate final hypothesis by majority vote
+            trainAcc, predictions = bagForwardPreComp(trainOutputRF4, trainData, T)
+            trainErrorRF4.append(1 - trainAcc)
+
+            testAcc, predictions = bagForwardPreComp(testOutputRF4, testData, T)
+            testErrorRF4.append(1 - testAcc)
+            # now we hand precomputed outputs to function to calculate final hypothesis by majority vote
+            trainAcc, predictions = bagForwardPreComp(trainOutputRF6, trainData, T)
+            trainErrorRF6.append(1 - trainAcc)
+
+            testAcc, predictions = bagForwardPreComp(testOutputRF6, testData, T)
+            testErrorRF6.append(1 - testAcc) 
+
+
+        RFlist = list(range(1,501))
+        plt.plot(RFlist, trainErrorRF2, label='Train Error, 2 Features')
+        plt.plot(RFlist, testErrorRF2, label='Test Error, 2 Features')
+        plt.plot(RFlist, trainErrorRF4, label='Train Error, 4 Features')
+        plt.plot(RFlist, testErrorRF4, label='Test Error, 4 Features')
+        plt.plot(RFlist, trainErrorRF6, label='Train Error, 6 Features')
+        plt.plot(RFlist, testErrorRF6, label='Test Error, 6 Features')
+        plt.xlabel('Number of Trees')
+        plt.ylabel('Error')
+        plt.legend
+        plt.savefig("Figures/RandomForestErrors.png")
+        plt.close
+
+
+    P2E = True
+    if P2E:
+        pass
 
 
 
