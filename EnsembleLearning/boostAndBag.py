@@ -592,7 +592,7 @@ if __name__ == "__main__":
         plt.plot(RFlist, testErrorRF6, label='Test Error, 6 Features')
         plt.xlabel('Number of Trees')
         plt.ylabel('Error')
-        plt.legend
+        plt.legend()
         plt.savefig("Figures/RandomForestErrors.png")
         plt.close
 
