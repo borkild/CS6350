@@ -336,7 +336,7 @@ if __name__ == "__main__":
 
 
     # Problem 2A
-    P2A = False
+    P2A = True
     if P2A:
         print('Running Problem 2A')
         # go through 500 iterations of Adaboost
@@ -397,7 +397,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2B = False
+    P2B = True
     if P2B:
         print('Running Problem 2B')
         # generate 500 bagged trees
@@ -439,7 +439,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2C = False
+    P2C = True
     if P2C:
         print('Running Problem 2C')
         bag100Trees = []
@@ -604,7 +604,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2E = False
+    P2E = True
     if P2E:
         print('Running Problem 2E')
         bag100Trees = []
