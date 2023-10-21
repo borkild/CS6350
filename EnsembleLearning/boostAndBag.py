@@ -180,15 +180,16 @@ def adaboostForwardPreComp(alphas, testData, modelOutputs, numModels=0):
         for labIdx in range(labels.size):
             # find where model outputs match which label
             h_t = (modOut[:, labIdx] == Ulabels[0])
+            h_t = h_t.astype(int)
             h_t[h_t == 0] = -1
             h_t = h_t.astype(float)
             # calculate final output
             H_final = np.sum(np.asarray(alphas)*h_t)
             # now apply sgn function using if statement
             if H_final < 0:
-                predictions.append(labels[1]) 
+                predictions.append(Ulabels[1]) 
             else:
-                predictions.append(labels[0])
+                predictions.append(Ulabels[0])
 
         accuracy = (np.sum(predictions == labels)/labels.size)
         return predictions, accuracy
@@ -204,15 +205,16 @@ def adaboostForwardPreComp(alphas, testData, modelOutputs, numModels=0):
         for labIdx in range(labels.size):
             # find where model outputs match which label
             h_t = (modOut[0:numModels, labIdx] == Ulabels[0])
+            h_t = h_t.astype(int)
             h_t[h_t == 0] = -1
             h_t = h_t.astype(float)
             # calculate final output
-            H_final = np.sum(np.asarray(alphas[0:numModels])*h_t)
+            H_final = np.sum(np.array(alphas[0:numModels])*h_t)
             # now apply sgn function using if statement
             if H_final < 0:
-                predictions.append(labels[1]) 
+                predictions.append(Ulabels[1]) 
             else:
-                predictions.append(labels[0])
+                predictions.append(Ulabels[0])
 
         accuracy = (np.sum(predictions == labels)/labels.size)
         return predictions, accuracy
@@ -259,6 +261,7 @@ def bagForwardPreComp(modelOutput, Data, numModels=0):
         labCount = np.zeros((Ulabels.size, labels.size))
         for uIdx in range(Ulabels.size):
             modMatch = (modOut[0:numModels, :] == Ulabels[uIdx])
+            modMatch = modMatch.astype(int)
             labCount[uIdx, :] = np.sum(modMatch, axis=0)
         labIdx = np.argmax(labCount, axis=0)
         predictions = Ulabels[labIdx]
@@ -333,7 +336,7 @@ if __name__ == "__main__":
 
 
     # Problem 2A
-    P2A = True
+    P2A = False
     if P2A:
         print('Running Problem 2A')
         # go through 500 iterations of Adaboost
@@ -366,6 +369,8 @@ if __name__ == "__main__":
         plt.savefig("Figures/StumpAcc.png")
         plt.close()
 
+        trainPredict, curTrainAcc = adaboostForwardPreComp(alphas, trainData, trainOutputs, numModels=25)
+
         trainAcc = []
         testAcc = []
         for T in range(1,501): # iterate through, grabbing a different number of stumps each time to get accuracy
@@ -392,7 +397,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2B = True
+    P2B = False
     if P2B:
         print('Running Problem 2B')
         # generate 500 bagged trees
@@ -409,6 +414,8 @@ if __name__ == "__main__":
             testOutput.append(bagTestOutput)
 
 
+
+        trainAcc, predictions = bagForwardPreComp(trainOutput, trainData, 500)
         trainError = []
         testError = []
         for T in range(1,501):
@@ -432,7 +439,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2C = True
+    P2C = False
     if P2C:
         print('Running Problem 2C')
         bag100Trees = []
@@ -597,7 +604,7 @@ if __name__ == "__main__":
         plt.close
 
 
-    P2E = True
+    P2E = False
     if P2E:
         print('Running Problem 2E')
         bag100Trees = []
@@ -670,13 +677,13 @@ if __name__ == "__main__":
         # calculate bias
         biaBag = np.power(testVals - avBagPred, 2)
         biaBagT = np.sum(biaBag)/biaBag.size
-        print("The bias for the bagged trees is:")
+        print("The bias for the RF trees is:")
         print(biaBagT)
         # compute sample variance of all predictions
         mHat = np.sum(numBagPred)/numBagPred.size
         sampSTD = np.sum(np.power(numBagPred - mHat, 2)) * (1/(numBagPred.size - 1))
         sampBagVar = np.sqrt(sampSTD) 
-        print("The variance for the bagged trees is:")
+        print("The variance for the RF trees is:")
         print(sampBagVar)
 
 
