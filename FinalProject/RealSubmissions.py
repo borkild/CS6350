@@ -149,6 +149,8 @@ if __name__ == "__main__":
 AB = True
 if AB:
     valAcc = 0
+    trainAccList = []
+    valAccList = []
     for numStumps in range(2,250):
         # generate ensemble
         boost = ensemble.AdaBoostClassifier(n_estimators=numStumps)
@@ -156,11 +158,13 @@ if AB:
         # run on training data
         trainPredict = boost.predict(trainDataNum)
         trainAcc = np.sum(trainPredict == trainLabels)/trainLabels.size
+        trainAccList.append(trainAcc)
         print("For an ensemble of {} trees: ".format(numStumps))
         print("training accuracy: {}".format(trainAcc))
         # run on validation data
         valPredict = boost.predict(valDataNum)
         curValAcc = np.sum(valPredict == valLabels)/valLabels.size
+        valAccList.append(curValAcc)
         print("validation accuracy: {}".format(curValAcc))
         if curValAcc > valAcc:
             print("New best accuracy! Running on test set")
@@ -175,7 +179,16 @@ if AB:
     final_output = final_output.astype(int)
     writeOutput(outFileName, final_output, outFields)
 
-
+    # plot accuracies over number of trees
+    numstump = list(range(2,250))
+    plt.figure()
+    plt.plot(numstump, trainAccList, label='Train Accuracy')
+    plt.plot(numstump, valAccList, label='Val Accuracy')
+    plt.xlabel("Number of Stumps")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.savefig("FinalProject/figures/BagAcc.png")
+    plt.close
 
 
 
