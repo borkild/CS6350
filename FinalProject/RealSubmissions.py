@@ -117,10 +117,12 @@ if __name__ == "__main__":
 
     outFields = ['ID', 'Prediction']
 
-    plainDT = False
+    plainDT = True
     if plainDT:
         # generate decision trees with varying depths
         maxDepth = 25
+        bestValAcc = 0
+        bestDepth = 0
         for depth in range(3, maxDepth):
             # generate decision tree using sklearn
             dTree = tree.DecisionTreeClassifier(max_depth=depth)
@@ -144,9 +146,16 @@ if __name__ == "__main__":
             final_output[:,1] = testPredict
             final_output = final_output.astype(int)
             writeOutput(outFileName, final_output, outFields)
+            # write out depth that gave the maximum value
+            if valAcc > bestValAcc:
+                bestValAcc = valAcc
+                bestDepth = depth
+
+        print("A depth of {} had the best validation accuracy".format(bestDepth))
 
 
-AB = True
+
+AB = False
 if AB:
     valAcc = 0
     trainAccList = []
