@@ -19,8 +19,6 @@ def convertLabel(labels):
 def trainPerceptron(trainData, trainLabels, numEpochs = 100, learnRate = 1.0):
     #initialize weights, we include the bias in our weight vector, so we add 1 additional parameter to it
     w = np.zeros(trainData.shape[1] + 1)
-    # initialize list to track training accuracy
-    trainAcc = []
     # iterate through each epoch
     for epoch in range(numEpochs):
         # shuffle data and labels
@@ -70,6 +68,30 @@ def trainVotedPercep(trainData, trainLabels, numEpochs = 100, learnRate = 1.0):
     # return weights and accuracies
     return wList, cList
 
+
+# function to train an average perceptron
+def trainAveragePercep(trainData, trainLabels, numEpochs = 100, learnRate = 1.0):
+    #initialize weights and average, we include the bias in our weight vector, so we add 1 additional parameter to it
+    w = np.zeros(trainData.shape[1] + 1)
+    a = np.zeros(trainData.shape[1] + 1)
+    # iterate through each epoch
+    for epoch in range(numEpochs):
+        # shuffle data and labels
+        shuffIdx = list(range(trainData.shape[0]))
+        random.shuffle(shuffIdx)
+        data = trainData[shuffIdx,:]
+        labels = trainLabels[shuffIdx]
+        # iterate through training examples
+        for exIdx in range(data.shape[0]):
+            x_i = np.append(data[exIdx, :], 1) # current row of data
+            y_i = labels[exIdx] # current label
+            updateW = np.dot(w*y_i, x_i)
+            if updateW <= 0: # update weights and average
+                w = w + learnRate*y_i*x_i
+                a = a + w
+    
+    # return average, a
+    return a
 
 
 
@@ -147,6 +169,7 @@ if __name__ == "__main__":
         out, testAcc = percepVotedForward(weights, c, testData, testLabels)
         testErrorV.append(1 - testAcc)
     
+    # apply average perceptron
 
 
 ben = 1
