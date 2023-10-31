@@ -32,7 +32,7 @@ def trainPerceptron(trainData, trainLabels, numEpochs = 100, learnRate = 1.0):
             y_i = labels[exIdx] # current label
             updateW = np.dot(w*y_i, x_i)
             if updateW <= 0: # update weights 
-                w = w + learnRate*y_i*x_i
+                w = w + learnRate*(y_i*x_i)
     
     # return weights and accuracies
     return w
@@ -58,7 +58,7 @@ def trainVotedPercep(trainData, trainLabels, numEpochs = 100, learnRate = 1.0):
             y_i = labels[exIdx] # current label
             updateW = np.dot(w*y_i, x_i)
             if updateW <= 0: # update weights 
-                w = w + learnRate*y_i*x_i
+                w = w + learnRate*(y_i*x_i)
                 wList.append(w)
                 cList.append(c)
                 c = 1
@@ -87,7 +87,7 @@ def trainAveragePercep(trainData, trainLabels, numEpochs = 100, learnRate = 1.0)
             y_i = labels[exIdx] # current label
             updateW = np.dot(w*y_i, x_i)
             if updateW <= 0: # update weights and average
-                w = w + learnRate*y_i*x_i
+                w = w + learnRate*(y_i*x_i)
                 a = a + w
     
     # return average, a
@@ -157,6 +157,13 @@ if __name__ == "__main__":
         out, testAcc = percepStandForward(weights, testData, testLabels)
         testErrorST.append(1 - testAcc)
 
+    print('\n')
+    print('\n')
+    print("For Standard Perceptron")
+    print("After 10 epochs, the Weights are: ")
+    print(weights)
+    print("The final test error is:")
+    print(testErrorST[9])
 
 
     # apply voted perceptron
@@ -167,12 +174,35 @@ if __name__ == "__main__":
         out, trainAcc = percepVotedForward(weights, c, trainData, trainLabels)
         trainErrorV.append(1 - trainAcc)
         out, testAcc = percepVotedForward(weights, c, testData, testLabels)
-        testErrorV.append(1 - testAcc)
+        testErrorV.append(1 - testAcc) 
+    print('\n')
+    print('\n')
+    print("For Voted Perceptron")
+    print("After 10 epochs, the Weights are: ")
+    print(weights)
+    print("The counts are: ")
+    print(c)
+    print("The final test error is:")
+    print(testErrorV[9])
     
     # apply average perceptron
+    trainErrorA = []
+    testErrorA = []
+    for numEpoch in range(1,11):
+        weights = trainAveragePercep(trainData, trainLabels, numEpoch, learnRate=0.1)
+        out, trainAcc = percepStandForward(weights, trainData, trainLabels)
+        trainErrorA.append(1 - trainAcc)
+        out, testAcc = percepStandForward(weights, testData, testLabels)
+        testErrorA.append(1 - testAcc)
 
+    print('\n')
+    print('\n')
+    print("For Averaged Perceptron")
+    print("After 10 epochs, the Weights are: ")
+    print(weights)
+    print("The final test error is:")
+    print(testErrorV[9])
 
-ben = 1
 
 
 
