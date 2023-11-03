@@ -118,7 +118,12 @@ def percepVotedForward(w, c, data, labels):
         for wIdx in range(len(w)): # iterate through weight vectors
             x_i = np.append(data[exIdx,:], 1) # grab current example
             w_i = w[wIdx]
-            out = np.dot(w_i, x_i)*c[wIdx] + out # calculate output from model
+            i_out = np.dot(w_i, x_i)
+            if i_out > 0:
+                i_out = 1
+            else:
+                i_out = -1
+            out = i_out*c[wIdx] + out # calculate output from model
         if out < 0: # update output array based on sign of out
             output[exIdx] = -1
         else:
@@ -180,6 +185,7 @@ if __name__ == "__main__":
     print("For Voted Perceptron")
     print("After 10 epochs, the Weights are: ")
     print(weights)
+    print("There are {} weight vectors".format(len(weights)))
     print("The counts are: ")
     print(c)
     print("The final test error is:")
