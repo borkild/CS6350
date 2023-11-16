@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 Perceptron/Percep.py
+python3 SVM/svm.py
