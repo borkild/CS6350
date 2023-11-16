@@ -60,7 +60,9 @@ def forwardLinSVM(w, data, labels):
     return acc, output
 
 
-
+# function to train SVM with kernel
+def trainKernSVM(traindata, trainLabels, K):
+    pass
 
 
         
@@ -132,4 +134,3 @@ if __name__ == "__main__":
         print("\n") 
 
     #### Problem 3A ####
-    
