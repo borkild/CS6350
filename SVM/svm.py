@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-import scipy
+import scipy.optimize as opt
 import random
 
 # import functions from previous assignment .py
@@ -60,11 +60,56 @@ def forwardLinSVM(w, data, labels):
     return acc, output
 
 
-# function to train SVM with kernel
-def trainKernSVM(traindata, trainLabels, K):
+# function to train SVM with kernel K
+def trainKernSVM(traindata, trainLabels, K, C):
+    # calculate value of kernel
+    kernVal = K(traindata)
+    y = np.expand_dims(trainLabels, axis=1)
+    # form optimization problem and use scipy's minimization function to solve
+    # define constraint
+    cons = ({'type': 'eq', 'fun': constraintFunc, 'args': (trainLabels)})
+    # define initial guess
+    alpha_i = np.zeros(trainLabels.size)
+    # define bounds for alpha -- should be between 0 and C
+    bd = np.ones((alpha_i.size, 2)) # need to define bounds for each entry in alpha vector
+    bd[:,0] = 0
+    bd[:,1] = C
+    bd = tuple(map(tuple, bd))
+    # use scipy.optimize.minimize to solve the minimization problem with the bounds, constraints, and initial guess
+    # args is used to pass the value of y and k to the dualForm function
+    result = opt.minimize(dualForm, alpha_i, args=(y, kernVal), method='SLSQP', bounds=bd, constraints=cons)
+    print(result.message)
+    # find b
+    alpha = result.x
+    k = np.argwhere(alpha > 0)
+    # return weight vector (alpha values that minimize our function)
+    return result.x
+    
+
+
+def constraintFunc(alpha, y):
+    return np.sum(alpha*y)
+
+
+# function for dual form of SVM
+def dualForm(alpha, y, k):
+    return 0.5*np.sum(np.matmul(y*alpha, np.transpose(y*alpha))*k) - np.sum(alpha)
+
+# linear kernel -- form matrix of kernel for faster optimization
+def linKern(data):
+    k = np.zeros((data.shape[0], data.shape[0]))
+    for i in range(data.shape[0]): # there's a better way to do this, just use this for now
+        for j in range(data.shape[0]):
+            k[i,j] = np.dot(data[i,:],data[j,:])
+    return k
+
+# gaussian kernel
+
+
+
+# function to run forward pass through trained SVM with kernel
+def forwardKernSVM(w, K, data, labels):
     pass
-
-
         
 
 # functions for calculating learning rate update
@@ -134,3 +179,4 @@ if __name__ == "__main__":
         print("\n") 
 
     #### Problem 3A ####
+    trainKernSVM(trainData, trainLabels, linKern, C[0])
