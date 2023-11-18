@@ -67,9 +67,9 @@ def trainKernSVM(traindata, trainLabels, K, C):
     y = np.expand_dims(trainLabels, axis=1)
     # form optimization problem and use scipy's minimization function to solve
     # define constraint
-    cons = ({'type': 'eq', 'fun': constraintFunc, 'args': (trainLabels)})
-    # define initial guess
-    alpha_i = np.zeros(trainLabels.size)
+    cons = ({'type': 'eq', 'fun': constraintFunc, 'args': (y, kernVal)})
+    # define initial guess -- always start in center of bounds
+    alpha_i = np.ones(trainLabels.size)*C*0.5
     # define bounds for alpha -- should be between 0 and C
     bd = np.ones((alpha_i.size, 2)) # need to define bounds for each entry in alpha vector
     bd[:,0] = 0
@@ -79,20 +79,18 @@ def trainKernSVM(traindata, trainLabels, K, C):
     # args is used to pass the value of y and k to the dualForm function
     result = opt.minimize(dualForm, alpha_i, args=(y, kernVal), method='SLSQP', bounds=bd, constraints=cons)
     print(result.message)
-    # find b
-    alpha = result.x
-    k = np.argwhere(alpha > 0)
     # return weight vector (alpha values that minimize our function)
     return result.x
     
 
 
-def constraintFunc(alpha, y):
+def constraintFunc(alpha, y, k):
     return np.sum(alpha*y)
 
 
 # function for dual form of SVM
 def dualForm(alpha, y, k):
+    alpha = np.expand_dims(alpha, axis=1) # need to expand alpha's dimensions to make the matrix multiplication work right
     return 0.5*np.sum(np.matmul(y*alpha, np.transpose(y*alpha))*k) - np.sum(alpha)
 
 # linear kernel -- form matrix of kernel for faster optimization
@@ -179,4 +177,5 @@ if __name__ == "__main__":
         print("\n") 
 
     #### Problem 3A ####
-    trainKernSVM(trainData, trainLabels, linKern, C[0])
+    alpha = trainKernSVM(trainData, trainLabels, linKern, C[0]) 
+    
