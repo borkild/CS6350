@@ -79,12 +79,21 @@ def trainKernSVM(traindata, trainLabels, K, C):
     # args is used to pass the value of y and k to the dualForm function
     result = opt.minimize(dualForm, alpha_i, args=(y, kernVal), method='SLSQP', bounds=bd, constraints=cons)
     print(result.message)
+    # calculate b
+    alpha = result.x
+    alphaStarIdx = np.argwhere((alpha > 0) & (alpha < C))
+    b = 0
+    for bIdx in alphaStarIdx:
+        b = trainLabels[bIdx] - np.sum(alpha*trainLabels*kernVal[:, bIdx]) + b
+
+    b = b/alphaStarIdx.size
     # return weight vector (alpha values that minimize our function)
-    return result.x
+    return alpha, b
     
 
 
 def constraintFunc(alpha, y, k):
+    alpha = np.expand_dims(alpha, axis=1) # need to expand alpha's dimensions to make the matrix multiplication work right
     return np.sum(alpha*y)
 
 
@@ -94,20 +103,57 @@ def dualForm(alpha, y, k):
     return 0.5*np.sum(np.matmul(y*alpha, np.transpose(y*alpha))*k) - np.sum(alpha)
 
 # linear kernel -- form matrix of kernel for faster optimization
-def linKern(data):
-    k = np.zeros((data.shape[0], data.shape[0]))
-    for i in range(data.shape[0]): # there's a better way to do this, just use this for now
-        for j in range(data.shape[0]):
-            k[i,j] = np.dot(data[i,:],data[j,:])
-    return k
+def linKern(data, opts = 'train', testData=None):
+    if opts == 'train':
+        k = np.zeros((data.shape[0], data.shape[0]))
+        for i in range(data.shape[0]): # there's a better way to do this, just use this for now
+            for j in range(data.shape[0]):
+                k[i,j] = np.dot(data[i,:],data[j,:])
+        return k 
+    elif opts == 'test':
+        k = np.zeros(data.shape[0])
+        for i in range(data.shape[0]):
+            k[i] = np.dot(data[i,:], testData)
+        return k
+    else:
+        print("opts not recognized, choose train or test")
+        k = []
+        return k
+
 
 # gaussian kernel
+def gaussKern(data, c = 1, opts = 'train', testData=None):
+    if opts == 'train':
+        k = np.zeros((data.shape[0], data.shape[0]))
+        for i in range(data.shape[0]): # there's a better way to do this, just use this for now
+            for j in range(data.shape[0]):
+                k[i,j] = np.exp(np.sum(np.power(data[i,:] - data[j,:], 2))/(-1*c))
+        return k 
+    elif opts == 'test':
+        k = np.zeros(data.shape[0])
+        for i in range(data.shape[0]):
+            k[i] = np.exp(np.sum(np.power(data[i,:] - testData, 2))/(-1*c))
+        return k
+    else:
+        print("opts not recognized, choose train or test")
+        k = []
+        return k
 
 
+# function to run forward pass through trained SVM with kernel, K
+def forwardKernSVM(alpha, b, K, testData, testLabels, trainData, trainLabels):
+    output = []
+    for testIdx in range(testData.shape[0]):
+        kern = K(trainData, opts='test', testData = testData[testIdx,:])
+        pred = np.sum(alpha*trainLabels*kern) + b
+        if pred > 0:
+            output.append(1)
+        else:
+            output.append(-1)
 
-# function to run forward pass through trained SVM with kernel
-def forwardKernSVM(w, K, data, labels):
-    pass
+    output = np.asarray(output)
+    acc = (output == testLabels)/output.size
+    return acc, output
         
 
 # functions for calculating learning rate update
@@ -177,5 +223,43 @@ if __name__ == "__main__":
         print("\n") 
 
     #### Problem 3A ####
-    alpha = trainKernSVM(trainData, trainLabels, linKern, C[0]) 
+    for k in range(len(C)):
+        # train SVM with linear kernel
+        alpha, b = trainKernSVM(trainData, trainLabels, linKern, C[k]) 
+        # calculate weight vector
+        alpha_y = alpha*trainLabels
+        w = np.zeros(trainData.shape[1])
+        for alIdx in range(alpha.size):
+            w = np.sum((alpha[alIdx]*trainLabels[alIdx])*trainData[alIdx,:]) + w
+        # calculate b
+        svIdx = np.argwhere(alpha>0)
+        b = []
+        for bIdx in svIdx:
+            curX = np.squeeze(trainData[bIdx,:])
+            b.append(trainLabels[bIdx] - np.dot(w, curX)) 
+        b = np.asarray(b)
+        b = np.mean(b) # average over all support vectors
+
+        w = np.append(w, b)
+
+        # calculate training and testing errors
+        trainAcc, output = forwardLinSVM(w, trainData, trainLabels)
+        trainError = 1 - trainAcc
+        testAcc, output = forwardLinSVM(w, testData, testLabels)
+        testError = 1 - testAcc
+        # print errors
+        print("For a C value of {} ".format(C[k]))
+        print("Training Error: {}".format(trainError))
+        print("Testing Error: {}".format(testError))
+        print("\n")
+
+        ben = 1
+
+
+
+
+    #### Problem 3B ####
+    gamma = [0.1, 0.5, 1, 5, 100]
+
+    
     
