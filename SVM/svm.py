@@ -258,8 +258,10 @@ if __name__ == "__main__":
 
 
 
-    #### Problem 3B ####
+    #### Problem 3B and 3C ####
     gamma = [0.1, 0.5, 1, 5, 100]
+    count = 0
+    suppVecs = []
     for gamVal in gamma:
         gaussK = gaussKern(trainData, gamVal)
         for k in range(len(C)):
@@ -271,7 +273,22 @@ if __name__ == "__main__":
             # forward pass on test data
             testAcc, out = forwardKernSVM(alpha, b, gaussKern, gamVal, testData, testLabels, trainData, trainLabels)
             testEr = 1 - testAcc
+            # find number of support vectors
+            numSuppVec = np.sum(alpha > 0)
+            
+             # print statements
             print("For a C value of {} and gamma of {}".format(C[k], gamVal))
             print("Training Error: {}".format(trainEr))
             print("Testing Error: {}".format(testEr))
+            print("Number of Support Vectors: {}".format(numSuppVec))
+            
+            # if C = 500/873 -- then we compare support vectors
+            if C[k] == 500/873:
+                suppVecIdx = np.argwhere(alpha > 0)
+                suppVecs.append(suppVecIdx)
+                if len(suppVecs) > 0:
+                    compVecs = suppVecs[len(suppVecs) - 1]
+                    overlap = np.intersect1d(suppVecIdx, compVecs)
+                    print("There are {} repeated support vectors".format(overlap.size))
+
             print("\n")
