@@ -62,12 +62,10 @@ def forwardLinSVM(w, data, labels):
 
 # function to train SVM with kernel K
 def trainKernSVM(traindata, trainLabels, K, C):
-    # calculate value of kernel
-    kernVal = K(traindata)
     y = np.expand_dims(trainLabels, axis=1)
     # form optimization problem and use scipy's minimization function to solve
     # define constraint
-    cons = ({'type': 'eq', 'fun': constraintFunc, 'args': (y, kernVal)})
+    cons = ({'type': 'eq', 'fun': constraintFunc, 'args': (y, K)})
     # define initial guess -- always start in center of bounds
     alpha_i = np.ones(trainLabels.size)*C*0.5
     # define bounds for alpha -- should be between 0 and C
@@ -77,14 +75,14 @@ def trainKernSVM(traindata, trainLabels, K, C):
     bd = tuple(map(tuple, bd))
     # use scipy.optimize.minimize to solve the minimization problem with the bounds, constraints, and initial guess
     # args is used to pass the value of y and k to the dualForm function
-    result = opt.minimize(dualForm, alpha_i, args=(y, kernVal), method='SLSQP', bounds=bd, constraints=cons)
+    result = opt.minimize(dualForm, alpha_i, args=(y, K), method='SLSQP', bounds=bd, constraints=cons)
     print(result.message)
     # calculate b
     alpha = result.x
     alphaStarIdx = np.argwhere((alpha > 0) & (alpha < C))
     b = 0
     for bIdx in alphaStarIdx:
-        b = trainLabels[bIdx] - np.sum(alpha*trainLabels*kernVal[:, bIdx]) + b
+        b = trainLabels[bIdx] - np.sum(alpha*trainLabels*K[:, bIdx]) + b
 
     b = b/alphaStarIdx.size
     # return weight vector (alpha values that minimize our function)
@@ -141,10 +139,10 @@ def gaussKern(data, c = 1, opts = 'train', testData=None):
 
 
 # function to run forward pass through trained SVM with kernel, K
-def forwardKernSVM(alpha, b, K, testData, testLabels, trainData, trainLabels):
+def forwardKernSVM(alpha, b, K, gamma, testData, testLabels, trainData, trainLabels):
     output = []
     for testIdx in range(testData.shape[0]):
-        kern = K(trainData, opts='test', testData = testData[testIdx,:])
+        kern = K(trainData, gamma, opts='test', testData = testData[testIdx,:])
         pred = np.sum(alpha*trainLabels*kern) + b
         if pred > 0:
             output.append(1)
@@ -152,7 +150,7 @@ def forwardKernSVM(alpha, b, K, testData, testLabels, trainData, trainLabels):
             output.append(-1)
 
     output = np.asarray(output)
-    acc = (output == testLabels)/output.size
+    acc = np.sum(output == testLabels)/output.size
     return acc, output
         
 
@@ -223,9 +221,11 @@ if __name__ == "__main__":
         print("\n") 
 
     #### Problem 3A ####
+    # calculate value of kernel
+    kernVal = linKern(trainData)
     for k in range(len(C)):
         # train SVM with linear kernel
-        alpha, b = trainKernSVM(trainData, trainLabels, linKern, C[k]) 
+        alpha, b = trainKernSVM(trainData, trainLabels, kernVal, C[k]) 
         # calculate weight vector
         alpha_y = alpha*trainLabels
         w = np.zeros(trainData.shape[1])
@@ -260,6 +260,18 @@ if __name__ == "__main__":
 
     #### Problem 3B ####
     gamma = [0.1, 0.5, 1, 5, 100]
-
-    
-    
+    for gamVal in gamma:
+        gaussK = gaussKern(trainData, gamVal)
+        for k in range(len(C)):
+            # train SVM with linear kernel
+            alpha, b = trainKernSVM(trainData, trainLabels, gaussK, C[k]) 
+            # forward pass on train data
+            trainAcc, out = forwardKernSVM(alpha, b, gaussKern, gamVal, trainData, trainLabels, trainData, trainLabels)
+            trainEr = 1 - trainAcc
+            # forward pass on test data
+            testAcc, out = forwardKernSVM(alpha, b, gaussKern, gamVal, testData, testLabels, trainData, trainLabels)
+            testEr = 1 - testAcc
+            print("For a C value of {} and gamma of {}".format(C[k], gamVal))
+            print("Training Error: {}".format(trainEr))
+            print("Testing Error: {}".format(testEr))
+            print("\n")
