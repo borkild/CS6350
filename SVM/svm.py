@@ -220,6 +220,15 @@ if __name__ == "__main__":
         print("Testing Error: {}".format(testError))
         print("\n") 
 
+    #### Problem 2C ####
+    # find difference between weights
+    for k in range(len(C)):
+        w_diff = w_ytA[k] - w_ytB[k]
+        print("For a C value of {}".format(C[k]))
+        print("The difference in weights is:")
+        print(w_diff)
+        print("\n")
+
     #### Problem 3A ####
     # calculate value of kernel
     kernVal = linKern(trainData)
@@ -251,6 +260,8 @@ if __name__ == "__main__":
         print("For a C value of {} ".format(C[k]))
         print("Training Error: {}".format(trainError))
         print("Testing Error: {}".format(testError))
+        print("The weights are: ")
+        print(w)
         print("\n")
 
         ben = 1
@@ -286,8 +297,8 @@ if __name__ == "__main__":
             if C[k] == 500/873:
                 suppVecIdx = np.argwhere(alpha > 0)
                 suppVecs.append(suppVecIdx)
-                if len(suppVecs) > 0:
-                    compVecs = suppVecs[len(suppVecs) - 1]
+                if len(suppVecs) > 1:
+                    compVecs = suppVecs[len(suppVecs) - 2]
                     overlap = np.intersect1d(suppVecIdx, compVecs)
                     print("There are {} repeated support vectors".format(overlap.size))
 
