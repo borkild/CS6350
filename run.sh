@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 SVM/svm.py
+python3 NeuralNetworks/customNN.py
