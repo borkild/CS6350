@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
 
 
@@ -40,6 +41,19 @@ def genRandWeight(width,inSize):
     w = [w1, w2, w3]
     return w
 
+# function to generate random weights from gaussian distribution
+def genZeroWeight(width,inSize):
+    # weights to create the first hidden layer
+    w1 = np.zeros((width-1,inSize+1)) # subtract 1 to account for bias node
+    # weights to create the second hidden layer
+    w2 = np.zeros((width-1, width))
+    # weights to create the third hidden layer
+    w3 = np.zeros((width, 1))
+    # concatinate into a list
+    w = [w1, w2, w3]
+    return w
+
+
 # function to perform forward pass through our 3 layer network
 def NN3LayerForward(w, input):
     # check to see if we have a 1D or 2D array
@@ -64,9 +78,10 @@ def NN3LayerForward(w, input):
 # function to train our 3 layer NN using the backpropagation algorithm
 def train3LayerNN(w_0, trainData, trainLabels, numEpoch):
     w = w_0.copy()
-    y_0 = 1
-    d = 3
+    y_0 = 0.01
+    d = 1000
     count = 0
+    loss = []
     for epoch in range(numEpoch):
         # randomly shuffle the data
         shfIdx = list(range(trainData.shape[0]))
@@ -80,9 +95,12 @@ def train3LayerNN(w_0, trainData, trainLabels, numEpoch):
             count += 1
             lr = y_0/(1 + (y_0/d)*count)
             for wIdx in range(len(w)):
-                w[wIdx] = w[wIdx] + lr*gradients[wIdx]
+                w[wIdx] = w[wIdx] - lr*gradients[wIdx] 
+            out, n = NN3LayerForward(w, curData)
+            L = 0.5*(out[0] - curLabel)**2
+            loss.append(L)
 
-    return w
+    return w, loss
 
 # function to perform backpropagation and calculate gradients
 def backpropagation3LNN(w, data, label):
@@ -97,15 +115,21 @@ def backpropagation3LNN(w, data, label):
     dydnode2 = w[2][1:np.size(w[2])] 
     dnode2 = nodes[1][1:np.size(nodes[1])]*(1-nodes[1][1:np.size(nodes[1])]) # gradient of nodes in layer 2, except for bias
     dnode2 = np.expand_dims(dnode2, axis=1)
-    grad2 = dLdy*dydnode2*dnode2*np.asarray([nodes[0], nodes[0]])
+    node1out = np.zeros((dnode2.size, nodes[0].size))
+    for k in range(dnode2.size):
+        node1out[k,:] = nodes[0]
+    grad2 = dLdy*dydnode2*dnode2*node1out
     # gradient of weights in layer 1
     dnode1 = nodes[0][1:np.size(nodes[0])]*(1-nodes[0][1:np.size(nodes[0])]) # gradient of nodes in layer 2, except for bias
     dnode1 = np.expand_dims(dnode1, axis=1)
     grad1 = np.zeros(w[0].shape)
+    node0out = np.zeros((dnode1.size, apData.size))
+    for k in range(dnode1.size):
+        node0out[k,:] = apData
     for nodIdx in range(dydnode2.size):
         dnode1dw = w[1][nodIdx,1:np.shape(w[1])[1]]
         dnode1dw = np.expand_dims(dnode1dw, axis=1)
-        grad1 = dLdy*dydnode2[nodIdx,0]*dnode2[nodIdx,0]*dnode1dw*dnode1*np.asarray([apData, apData]) + grad1
+        grad1 = dLdy*dydnode2[nodIdx,0]*dnode2[nodIdx,0]*dnode1dw*dnode1*node0out + grad1
     grads = [grad1, grad2, grad3]
     return grads
 
@@ -133,12 +157,64 @@ if __name__ == "__main__":
     testData = np.delete(testData, testData.shape[1]-1, axis=1)
 
     #### Problem 2B ####
+    print("Running Problem 2B")
     w_0 = genRandWeight(3, trainData.shape[1])
-    w = train3LayerNN(w_0, trainData, trainLabels, 2)
+    w, loss = train3LayerNN(w_0, trainData, trainLabels, 2)
+    numNodes = [5, 10, 25, 50, 100]
+    for node in numNodes:
+        w_0 = genRandWeight(node, trainData.shape[1])
+        w, loss = train3LayerNN(w_0, trainData, trainLabels, 40)
+        # checking for convergence
+        #x = list(range(len(loss)))
+        #plt.plot(loss)
+        #plt.show()
+
+        # training error
+        predict, neu = NN3LayerForward(w, trainData)
+        # clamp outputs to 1 or -1, as they will never be exactly 1 or -1
+        prediction = np.sign(predict)
+        trainAccuracy = np.sum(prediction == trainLabels)/prediction.size
+        trainErr = 1 - trainAccuracy
+
+        # testing error
+        predict, neu = NN3LayerForward(w, testData)
+        # clamp outputs to 1 or -1, as they will never be exactly 1 or -1
+        prediction = np.sign(predict)
+        tstaccuracy = np.sum(prediction == testLabels)/prediction.size
+        tstErr = 1 - tstaccuracy
+        # print outputs
+        print("For a 3 layer network with {} hidden nodes".format(node))
+        print("The training error is: {}".format(trainErr))
+        print("The testing error is: {}".format(tstErr))
+        print("\n")
     
 
-    ben = 1
-
     #### Problem 2C ####
+    print("Running Problem 2C")
+    for node in numNodes:
+        w_0 = genZeroWeight(node, trainData.shape[1])
+        w, loss = train3LayerNN(w_0, trainData, trainLabels, 40)
+        # checking for convergence
+        #x = list(range(len(loss)))
+        #plt.plot(loss)
+        #plt.show()
 
+        # training error
+        predict, neu = NN3LayerForward(w, trainData)
+        # clamp outputs to 1 or -1, as they will never be exactly 1 or -1
+        prediction = np.sign(predict)
+        trainAccuracy = np.sum(prediction == trainLabels)/prediction.size
+        trainErr = 1 - trainAccuracy
+
+        # testing error
+        predict, neu = NN3LayerForward(w, testData)
+        # clamp outputs to 1 or -1, as they will never be exactly 1 or -1
+        prediction = np.sign(predict)
+        tstaccuracy = np.sum(prediction == testLabels)/prediction.size
+        tstErr = 1 - tstaccuracy
+        # print outputs
+        print("For a 3 layer network with {} hidden nodes".format(node))
+        print("The training error is: {}".format(trainErr))
+        print("The testing error is: {}".format(tstErr))
+        print("\n")
 
